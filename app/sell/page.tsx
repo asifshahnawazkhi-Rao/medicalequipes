@@ -76,8 +76,10 @@ export default function SellEquipmentPage() {
       setMessage("Saving image records...");
       await saveListingImages(session, listing.id, uploaded);
       setProgress(100);
-      setMessage("Listing created successfully. Redirecting...");
-      window.location.assign(`/dashboard?created=${encodeURIComponent(listing.id)}`);
+      setMessage("Listing published successfully. Redirecting to your dashboard...");
+      window.setTimeout(() => {
+        window.location.assign(`/dashboard?created=${encodeURIComponent(listing.id)}`);
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create listing.");
       setMessage("");
