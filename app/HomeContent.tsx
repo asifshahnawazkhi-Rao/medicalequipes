@@ -22,13 +22,17 @@ const listings = [
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
 
+  function goToSell() {
+    window.location.assign("/sell");
+  }
+
   return (
     <main>
       <header className="header">
         <div className="container nav">
           <div className="brand"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></div>
           <nav><a href="#categories">Categories</a><a href="#listings">Buy</a><a href="#sell">Sell</a><a href="#sellers">Sellers</a></nav>
-          <div className="navActions"><button className="login" onClick={() => setAuthOpen(true)}>Login</button><button className="primary">+ Sell Equipment</button></div>
+          <div className="navActions"><button className="login" onClick={() => setAuthOpen(true)}>Login</button><button className="primary" onClick={goToSell}>+ Sell Equipment</button></div>
         </div>
       </header>
 
@@ -54,7 +58,7 @@ export default function HomeContent() {
 
       <section className="quick container">
         <div><span>⌕</span><div><b>Find Equipment</b><small>Search thousands of listings</small></div></div>
-        <div><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></div>
+        <button className="quickAction" type="button" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button>
         <div><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></div>
       </section>
 
@@ -75,11 +79,11 @@ export default function HomeContent() {
         <div className="sellerGrid">{["ABC Medical Equipment","MediTech Pakistan","HealthCare Solutions"].map((s,i)=><article className="seller" key={s}><div className="avatar">{s[0]}</div><div><h3>{s}</h3><p>✓ Verified Dealer · {["Karachi","Lahore","Islamabad"][i]}</p><small>{[124,86,61][i]} active listings · ★ 4.{8-i}</small></div><button>View Profile</button></article>)}</div>
       </section>
 
-      <section id="sell" className="sellCta"><div className="container sellInner"><div><span className="eyebrow">GROW YOUR BUSINESS</span><h2>Have medical equipment to sell?</h2><p>Reach serious buyers and healthcare businesses across Pakistan.</p></div><button className="lightBtn">+ Post Equipment</button></div></section>
+      <section id="sell" className="sellCta"><div className="container sellInner"><div><span className="eyebrow">GROW YOUR BUSINESS</span><h2>Have medical equipment to sell?</h2><p>Reach serious buyers and healthcare businesses across Pakistan.</p></div><button className="lightBtn" onClick={goToSell}>+ Post Equipment</button></div></section>
 
       <section className="section container steps"><div className="sectionHead center"><div><span className="eyebrow">SIMPLE PROCESS</span><h2>How MedicalEquipes Works</h2></div></div><div className="stepGrid">{[["01","Register","Create your account and submit your details."],["02","Get Approved","Our team verifies your profile before selling."],["03","List Equipment","Add photos, specifications and pricing."],["04","Connect","Chat or contact buyers and sellers directly."]].map(([n,t,d])=><div className="step" key={n}><b>{n}</b><h3>{t}</h3><p>{d}</p></div>)}</div></section>
 
-      <footer><div className="container footerGrid"><div><div className="brand footerBrand"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></div><p>The professional marketplace for medical and surgical equipment.</p></div><div><b>Marketplace</b><a href="#">Browse Equipment</a><a href="#">Categories</a><a href="#">Verified Sellers</a></div><div><b>Company</b><a href="#">About Us</a><a href="#">Contact</a><a href="#">Help Center</a></div><div><b>Account</b><a href="#" onClick={(event) => { event.preventDefault(); setAuthOpen(true); }}>Login</a><a href="#" onClick={(event) => { event.preventDefault(); setAuthOpen(true); }}>Register</a><a href="#">Sell Equipment</a></div></div><div className="container copyright">© 2026 MedicalEquipes. All rights reserved.</div></footer>
+      <footer><div className="container footerGrid"><div><div className="brand footerBrand"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></div><p>The professional marketplace for medical and surgical equipment.</p></div><div><b>Marketplace</b><a href="#">Browse Equipment</a><a href="#">Categories</a><a href="#">Verified Sellers</a></div><div><b>Company</b><a href="#">About Us</a><a href="#">Contact</a><a href="#">Help Center</a></div><div><b>Account</b><a href="#" onClick={(event) => { event.preventDefault(); setAuthOpen(true); }}>Login</a><a href="#" onClick={(event) => { event.preventDefault(); setAuthOpen(true); }}>Register</a><a href="/sell">Sell Equipment</a></div></div><div className="container copyright">© 2026 MedicalEquipes. All rights reserved.</div></footer>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </main>
   );
