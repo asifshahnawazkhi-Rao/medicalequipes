@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
 
-type Listing = [string, string, string, string, string];
+type Listing = [string, string, string, string, string, string];
 
 const categories = [
   ["Diagnostic Equipment", "Ultrasound, ECG, patient monitors and more", "01"],
@@ -29,13 +29,14 @@ useEffect(() => {
   getPublicListings()
     .then((rows) => {
       setMarketListings(
-        rows.map((item) => [
-          item.title,
-          item.category,
-          `Rs. ${item.price.toLocaleString("en-PK")}`,
-          item.city,
-          item.condition,
-        ])
+       rows.map((item) => [
+  item.title,
+  item.category,
+  `Rs. ${item.price.toLocaleString("en-PK")}`,
+  item.city,
+  item.condition,
+  item.imageUrl,
+])
       );
     })
     .catch(() => setMarketListings([]));
@@ -69,7 +70,16 @@ useEffect(() => {
 
       <section id="categories" className="section container"><div className="sectionHead"><div><span className="eyebrow">EXPLORE</span><h2>Browse by Category</h2></div><button type="button" onClick={() => chooseCategory("All")}>View all categories →</button></div><div className="categoryGrid">{categories.map(([title, desc, n]) => <button type="button" className={`category ${category === title ? "active" : ""}`} key={title} onClick={() => chooseCategory(title)}><div className="catIcon">{n}</div><h3>{title}</h3><p>{desc}</p><span>Explore →</span></button>)}</div></section>
 
-      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([title, cat, price, listingCity, condition]) => <article className="listing" key={title}><div className="listingImage"><div className="equipmentShape" /><span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => setAuthOpen(true)}>Contact Seller</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button className="primary" type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Show all equipment</button></div>}</div></section>
+      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={title}><div className="listingImage">
+  {imageUrl ? (
+    <img
+      src={imageUrl}
+      alt={title}
+      className="listingPhoto"
+    />
+  ) : (
+    <div className="equipmentShape" />
+  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => setAuthOpen(true)}>Contact Seller</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button className="primary" type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Show all equipment</button></div>}</div></section>
 
       <section id="sellers" className="section container"><div className="sectionHead"><div><span className="eyebrow">TRUSTED NETWORK</span><h2>Verified Sellers</h2></div><button type="button" onClick={() => setAuthOpen(true)}>Join as a seller →</button></div><div className="sellerGrid">{["ABC Medical Equipment","MediTech Pakistan","HealthCare Solutions"].map((s,i)=><article className="seller" key={s}><div className="avatar">{s[0]}</div><div><h3>{s}</h3><p>✓ Verified Dealer · {["Karachi","Lahore","Islamabad"][i]}</p><small>{[124,86,61][i]} active listings · ★ 4.{8-i}</small></div><button type="button" onClick={() => { setCity(["Karachi","Lahore","Islamabad"][i]); search(); }}>View Listings</button></article>)}</div></section>
 
