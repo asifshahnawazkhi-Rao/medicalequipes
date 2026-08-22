@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
 
 type Listing = [string, string, string, string, string];
@@ -14,12 +15,7 @@ const categories = [
   ["Dental Equipment", "Dental chairs, units and instruments", "06"],
 ];
 
-const listings: Listing[] = [
-  ["GE Ultrasound Voluson E10", "Diagnostic Equipment", "Rs. 12,500,000", "Karachi", "Used"],
-  ["Dräger Savina 300 Ventilator", "Patient Care", "Rs. 1,850,000", "Lahore", "Refurbished"],
-  ["Maquet OT Table", "Surgical Equipment", "Rs. 3,200,000", "Islamabad", "Used"],
-  ["Mindray BC-6800 Analyzer", "Laboratory Equipment", "Rs. 4,750,000", "Karachi", "Demo"],
-];
+
 
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -27,20 +23,37 @@ export default function HomeContent() {
   const [city, setCity] = useState("All Pakistan");
   const [category, setCategory] = useState("All");
   const [favorites, setFavorites] = useState<string[]>([]);
+ const [marketListings, setMarketListings] = useState<Listing[]>([]);
+
+useEffect(() => {
+  getPublicListings()
+    .then((rows) => {
+      setMarketListings(
+        rows.map((item) => [
+          item.title,
+          item.category,
+          `Rs. ${item.price.toLocaleString("en-PK")}`,
+          item.city,
+          item.condition,
+        ])
+      );
+    })
+    .catch(() => setMarketListings([]));
+}, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return listings.filter(([title, cat, , listingCity]) =>
+    return marketListings.filter(([title, cat, , listingCity]) =>
       (!q || `${title} ${cat} ${listingCity}`.toLowerCase().includes(q)) &&
       (category === "All" || cat === category) &&
       (city === "All Pakistan" || listingCity === city)
     );
-  }, [query, city, category]);
+ }, [query, city, category, marketListings]);
 
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
   function chooseCategory(name: string) { setCategory(name); setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 20); }
-  function toggleFavorite(title: string) { setFavorites((items) => items.includes(title) ? items.filter((item) => item !== title) : [...items, title]); }
+  function toggleorite(title: string) { setorites((items) => items.includes(title) ? items.filter((item) => item !== title) : [...items, title]); }
 
   return (
     <main>
