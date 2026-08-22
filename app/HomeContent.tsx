@@ -4,8 +4,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
 
-const [pendingContactId, setPendingContactId] = useState<string | null>(null);
-
 
 type Listing = [
   string,
