@@ -1,21 +1,11 @@
 "use client";
-
+import { getStoredSession } from "./auth";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
-import { getStoredSession } from "./auth";
+
 const [pendingContactId, setPendingContactId] = useState<string | null>(null);
-function contactSeller(id: string) {
-  const session = getStoredSession();
 
-  if (!session?.access_token) {
-    setPendingContactId(id);
-    setAuthOpen(true);
-    return;
-  }
-
-  window.location.assign(`/listing/${id}`);
-}
 
 type Listing = [
   string,
@@ -43,8 +33,22 @@ export default function HomeContent() {
   const [city, setCity] = useState("All Pakistan");
   const [category, setCategory] = useState("All");
   const [favorites, setFavorites] = useState<string[]>([]);
- const [marketListings, setMarketListings] = useState<Listing[]>([]);
+  const [marketListings, setMarketListings] = useState<Listing[]>([]);
+  const [pendingContactId, setPendingContactId] = useState<string | null>(null);
 
+  function contactSeller(id: string) {
+    const session = getStoredSession();
+
+    if (!session?.access_token) {
+      setPendingContactId(id);
+      setAuthOpen(true);
+      return;
+    }
+
+    window.location.assign(`/listing/${id}`);
+  }
+
+  // useEffect etc. continues here...
 useEffect(() => {
   getPublicListings()
     .then((rows) => {
