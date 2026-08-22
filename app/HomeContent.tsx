@@ -53,7 +53,7 @@ useEffect(() => {
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
   function chooseCategory(name: string) { setCategory(name); setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 20); }
-  function toggleorite(title: string) { setFavorites((items) =>
+  function toggleFavorite(title: string) { setFavorites((items) =>
   items.includes(title)
     ? items.filter((item) => item !== title)
     : [...items, title]
