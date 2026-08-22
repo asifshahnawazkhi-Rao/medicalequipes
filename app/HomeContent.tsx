@@ -3,6 +3,19 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
+import { getStoredSession } from "./auth";
+const [pendingContactId, setPendingContactId] = useState<string | null>(null);
+function contactSeller(id: string) {
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    setPendingContactId(id);
+    setAuthOpen(true);
+    return;
+  }
+
+  window.location.assign(`/listing/${id}`);
+}
 
 type Listing = [
   string,
@@ -87,7 +100,9 @@ useEffect(() => {
     />
   ) : (
     <div className="equipmentShape" />
-  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => setAuthOpen(true)}>Contact Seller</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button className="primary" type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Show all equipment</button></div>}</div></section>
+  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
+  Contact Seller
+</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button className="primary" type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Show all equipment</button></div>}</div></section>
 
       <section id="sellers" className="section container"><div className="sectionHead"><div><span className="eyebrow">TRUSTED NETWORK</span><h2>Verified Sellers</h2></div><button type="button" onClick={() => setAuthOpen(true)}>Join as a seller →</button></div><div className="sellerGrid">{["ABC Medical Equipment","MediTech Pakistan","HealthCare Solutions"].map((s,i)=><article className="seller" key={s}><div className="avatar">{s[0]}</div><div><h3>{s}</h3><p>✓ Verified Dealer · {["Karachi","Lahore","Islamabad"][i]}</p><small>{[124,86,61][i]} active listings · ★ 4.{8-i}</small></div><button type="button" onClick={() => { setCity(["Karachi","Lahore","Islamabad"][i]); search(); }}>View Listings</button></article>)}</div></section>
 
@@ -95,7 +110,17 @@ useEffect(() => {
 
       <section className="section container steps"><div className="sectionHead center"><div><span className="eyebrow">SIMPLE PROCESS</span><h2>How MedicalEquipes Works</h2></div></div><div className="stepGrid">{[["01","Register","Create your account and submit your details."],["02","Get Approved","Our team verifies your profile before selling."],["03","List Equipment","Add photos, specifications and pricing."],["04","Connect","Chat or contact buyers and sellers directly."]].map(([n,t,d])=><div className="step" key={n}><b>{n}</b><h3>{t}</h3><p>{d}</p></div>)}</div></section>
 
-      <footer><div className="container footerGrid"><div><div className="brand footerBrand"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></div><p>The professional marketplace for medical and surgical equipment.</p></div><div><b>Marketplace</b><a href="#listings">Browse Equipment</a><a href="#categories">Categories</a><a href="#sellers">Verified Sellers</a></div><div><b>Company</b><a href="#top">About Us</a><a href="mailto:support@medicalequipes.com">Contact</a><a href="#top">Help Center</a></div><div><b>Account</b><button onClick={() => setAuthOpen(true)}>Login / Register</button><button onClick={goToSell}>Sell Equipment</button></div></div><div className="container copyright">© 2026 MedicalEquipes. All rights reserved.</div></footer><AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <footer><div className="container footerGrid"><div><div className="brand footerBrand"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></div><p>The professional marketplace for medical and surgical equipment.</p></div><div><b>Marketplace</b><a href="#listings">Browse Equipment</a><a href="#categories">Categories</a><a href="#sellers">Verified Sellers</a></div><div><b>Company</b><a href="#top">About Us</a><a href="mailto:support@medicalequipes.com">Contact</a><a href="#top">Help Center</a></div><div><b>Account</b><button onClick={() => setAuthOpen(true)}>Login / Register</button><button onClick={goToSell}>Sell Equipment</button></div></div><div className="container copyright">© 2026 MedicalEquipes. All rights reserved.</div></footer><AuthModal
+  open={authOpen}
+  onClose={() => setAuthOpen(false)}
+  onLoginSuccess={() => {
+    if (pendingContactId) {
+      const id = pendingContactId;
+      setPendingContactId(null);
+      window.location.assign(`/listing/${id}`);
+    }
+  }}
+/>
     </main>
   );
 }
