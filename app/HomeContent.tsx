@@ -4,8 +4,15 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
 
-type Listing = [string, string, string, string, string, string];
-
+type Listing = [
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string
+];
 const categories = [
   ["Diagnostic Equipment", "Ultrasound, ECG, patient monitors and more", "01"],
   ["Surgical Equipment", "OT tables, surgical instruments and accessories", "02"],
