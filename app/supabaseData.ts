@@ -106,10 +106,29 @@ function setExisting(
 
 export async function getCategories(session?: AuthSession) {
   try {
-    const rows = await supabaseFetch<Array<Record<string, unknown>>>('/rest/v1/categories?select=id,name,title&order=name.asc', session);
-    return rows.map((row) => ({ id: String(row.id), name: String(row.name ?? row.title ?? row.id) }));
+    const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+      "/rest/v1/categories?select=id,name&order=name.asc",
+      session
+    );
+
+    return rows.map((row) => ({
+      id: String(row.id),
+      name: String(row.name ?? row.id),
+    }));
   } catch {
-    return [];
+    try {
+      const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+        "/rest/v1/categories?select=id,title&order=title.asc",
+        session
+      );
+
+      return rows.map((row) => ({
+        id: String(row.id),
+        name: String(row.title ?? row.id),
+      }));
+    } catch {
+      return [];
+    }
   }
 }
 
