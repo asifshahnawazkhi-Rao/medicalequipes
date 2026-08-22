@@ -139,7 +139,8 @@ export async function createListing(session: AuthSession, values: Record<string,
   const payload: Record<string, unknown> = {};
 
   setExisting(payload, columns, listingFields.userId, user.id);
-  setExisting(payload, columns, listingFields.category, values.categoryId);
+payload.seller_id = user.id;
+setExisting(payload, columns, listingFields.category, values.categoryId);
   setExisting(payload, columns, listingFields.title, values.title.trim());
   setExisting(payload, columns, listingFields.brand, values.brand?.trim());
   setExisting(payload, columns, listingFields.model, values.model?.trim());
