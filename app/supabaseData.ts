@@ -161,7 +161,40 @@ setExisting(payload, columns, listingFields.category, values.categoryId);
 
   return rows[0];
 }
+export type PublicListing = {
+  id: string;
+  title: string;
+  category: string;
+  price: number;
+  city: string;
+  condition: string;
+  imageUrl: string;
+};
 
+export async function getPublicListings(session?: AuthSession): Promise<PublicListing[]> {
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    "/rest/v1/listings?select=id,title,price,city,condition,status,categories(name),listing_images(image_url,sort_order)&status=eq.active&order=created_at.desc",
+    session
+  );
+
+  return rows.map((row) => {
+    const category = row.categories as { name?: string } | null;
+    const images = Array.isArray(row.listing_images)
+      ? (row.listing_images as Array<{ image_url?: string; sort_order?: number }>)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      : [];
+
+    return {
+      id: String(row.id),
+      title: String(row.title ?? ""),
+      category: String(category?.name ?? "Medical Equipment"),
+      price: Number(row.price ?? 0),
+      city: String(row.city ?? ""),
+      condition: String(row.condition ?? ""),
+      imageUrl: String(images[0]?.image_url ?? ""),
+    };
+  });
+}
 export async function uploadListingImage(session: AuthSession, listingId: string, file: File) {
   requireUserSession(session);
   const user = session.user!;
