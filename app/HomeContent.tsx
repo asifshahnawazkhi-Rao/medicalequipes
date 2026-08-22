@@ -44,7 +44,7 @@ useEffect(() => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return marketListings.filter(([title, cat, , listingCity]) =>
+    return marketListings.filter(([, title, cat, , listingCity]) =>
       (!q || `${title} ${cat} ${listingCity}`.toLowerCase().includes(q)) &&
       (category === "All" || cat === category) &&
       (city === "All Pakistan" || listingCity === city)
@@ -70,7 +70,7 @@ useEffect(() => {
 
       <section id="categories" className="section container"><div className="sectionHead"><div><span className="eyebrow">EXPLORE</span><h2>Browse by Category</h2></div><button type="button" onClick={() => chooseCategory("All")}>View all categories →</button></div><div className="categoryGrid">{categories.map(([title, desc, n]) => <button type="button" className={`category ${category === title ? "active" : ""}`} key={title} onClick={() => chooseCategory(title)}><div className="catIcon">{n}</div><h3>{title}</h3><p>{desc}</p><span>Explore →</span></button>)}</div></section>
 
-      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={title}><div className="listingImage">
+      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
   {imageUrl ? (
     <img
       src={imageUrl}
