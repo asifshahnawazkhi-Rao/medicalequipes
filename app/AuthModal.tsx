@@ -5,7 +5,15 @@ import { saveSession, sendPasswordReset, signInWithPassword, signUpWithPassword 
 
 type Mode = "login" | "signup" | "forgot";
 
-export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function AuthModal({
+  open,
+  onClose,
+  onLoginSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onLoginSuccess?: () => void;
+}) {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,9 +36,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
       const session = mode === "login" ? await signInWithPassword(email, password) : await signUpWithPassword(email, password);
 
-     if (session.access_token) {
+    if (session.access_token) {
   saveSession(session);
   onClose();
+  onLoginSuccess?.();
   return;
 }
 
