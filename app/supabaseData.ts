@@ -227,7 +227,7 @@ export async function saveListingImages(session: AuthSession, listingId: string,
 }
 export async function getListingById(id: string, session?: AuthSession) {
   const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/listings?select=id,title,price,city,condition,description,brand,model,contact_name,contact_email,contact_phone,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(id)}&limit=1`,
+    `/rest/v1/listings?select=*,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(id)}&limit=1`,
     session
   );
 
@@ -248,17 +248,17 @@ export async function getListingById(id: string, session?: AuthSession) {
 
   return {
     id: String(row.id),
-    title: String(row.title ?? ""),
+    title: String(row.title ?? row.name ?? ""),
     category: String(category?.name ?? "Medical Equipment"),
-    price: Number(row.price ?? 0),
-    city: String(row.city ?? ""),
-    condition: String(row.condition ?? ""),
-    description: String(row.description ?? ""),
+    price: Number(row.price ?? row.asking_price ?? row.amount ?? 0),
+    city: String(row.city ?? row.location_city ?? row.location ?? ""),
+    condition: String(row.condition ?? row.equipment_condition ?? ""),
+    description: String(row.description ?? row.details ?? ""),
     brand: String(row.brand ?? ""),
     model: String(row.model ?? ""),
-    contactName: String(row.contact_name ?? ""),
-    contactEmail: String(row.contact_email ?? ""),
-    contactPhone: String(row.contact_phone ?? ""),
+    contactName: String(row.contact_name ?? row.seller_name ?? ""),
+    contactEmail: String(row.contact_email ?? row.email ?? ""),
+    contactPhone: String(row.contact_phone ?? row.phone ?? row.phone_number ?? ""),
     images,
   };
 }
