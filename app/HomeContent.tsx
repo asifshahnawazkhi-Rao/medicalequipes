@@ -37,6 +37,7 @@ useEffect(() => {
     .then((rows) => {
       setMarketListings(
        rows.map((item) => [
+  item.id,
   item.title,
   item.category,
   `Rs. ${item.price.toLocaleString("en-PK")}`,
