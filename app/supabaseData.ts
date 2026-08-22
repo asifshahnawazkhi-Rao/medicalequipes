@@ -225,3 +225,40 @@ export async function saveListingImages(session: AuthSession, listingId: string,
 
   await supabaseFetch('/rest/v1/listing_images', session, { method: "POST", body: JSON.stringify(rows) });
 }
+export async function getListingById(id: string, session?: AuthSession) {
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/listings?select=id,title,price,city,condition,description,brand,model,contact_name,contact_email,contact_phone,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(id)}&limit=1`,
+    session
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  const category = row.categories as { name?: string } | null;
+
+  const images = Array.isArray(row.listing_images)
+    ? (row.listing_images as Array<{
+        image_url?: string;
+        sort_order?: number;
+      }>)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((image) => String(image.image_url ?? ""))
+        .filter(Boolean)
+    : [];
+
+  return {
+    id: String(row.id),
+    title: String(row.title ?? ""),
+    category: String(category?.name ?? "Medical Equipment"),
+    price: Number(row.price ?? 0),
+    city: String(row.city ?? ""),
+    condition: String(row.condition ?? ""),
+    description: String(row.description ?? ""),
+    brand: String(row.brand ?? ""),
+    model: String(row.model ?? ""),
+    contactName: String(row.contact_name ?? ""),
+    contactEmail: String(row.contact_email ?? ""),
+    contactPhone: String(row.contact_phone ?? ""),
+    images,
+  };
+}
