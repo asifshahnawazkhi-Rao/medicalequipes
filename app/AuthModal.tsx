@@ -28,11 +28,11 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
       const session = mode === "login" ? await signInWithPassword(email, password) : await signUpWithPassword(email, password);
 
-      if (session.access_token) {
-        saveSession(session);
-        window.location.assign("/dashboard");
-        return;
-      }
+     if (session.access_token) {
+  saveSession(session);
+  onClose();
+  return;
+}
 
       setMessage("Check your email to confirm your account before logging in.");
     } catch (error) {
