@@ -30,7 +30,7 @@ export default function SellEquipmentPage() {
     getCategories(stored).then(setCategories).catch(() => setCategories([]));
   }, []);
 
-  const const categoryOptions = useMemo(() => categories, [categories]);
+  const categoryOptions = useMemo(() => categories, [categories]);
 
   function onFilesSelected(selected: FileList | null) {
     setError("");
