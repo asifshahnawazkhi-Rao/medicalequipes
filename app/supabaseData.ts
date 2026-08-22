@@ -69,13 +69,29 @@ export async function supabaseFetch<T>(path: string, session?: AuthSession, init
 }
 
 async function tableColumns(session: AuthSession, table: string) {
-  const schema = await supabaseFetch<OpenApiSchema>("/rest/v1/", session, {
-    headers: { Accept: "application/openapi+json" },
-  });
-  const tables = schema.definitions ?? schema.components?.schemas ?? {};
-  const columns = Object.keys(tables[table]?.properties ?? {});
-  if (!columns.length) throw new Error(`Could not inspect the ${table} table schema from Supabase.`);
-  return new Set(columns);
+  const fieldMap = table === "listings" ? listingFields : listingImageFields;
+  const candidates = [...new Set(Object.values(fieldMap).flat())];
+  const columns = new Set<string>();
+
+  for (const column of candidates) {
+    try {
+      await supabaseFetch<unknown[]>(
+        `/rest/v1/${table}?select=${encodeURIComponent(column)}&limit=0`,
+        session
+      );
+      columns.add(column);
+    } catch {
+      // Column does not exist or is not exposed; skip it.
+    }
+  }
+
+  if (!columns.size) {
+    throw new Error(
+      `Could not detect usable columns for the ${table} table in Supabase.`
+    );
+  }
+
+  return columns;
 }
 
 function setExisting(
