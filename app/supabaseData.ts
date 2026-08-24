@@ -445,3 +445,24 @@ export async function updateListing(
     }
   );
 }
+export async function deleteListing(
+  session: AuthSession,
+  listingId: string
+) {
+  requireUserSession(session);
+
+  const user = session.user!;
+
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(
+      listingId
+    )}&seller_id=eq.${encodeURIComponent(user.id)}`,
+    session,
+    {
+      method: "DELETE",
+      headers: {
+        Prefer: "return=minimal",
+      },
+    }
+  );
+}
