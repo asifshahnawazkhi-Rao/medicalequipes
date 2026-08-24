@@ -252,7 +252,21 @@ export default function ListingPage({
                 </a>
               )}
             </div>
-         
+          </section>
+
+          <aside className="listingSafetyCard">
+            <span className="eyebrow">BUY SAFELY</span>
+            <h2>Marketplace safety</h2>
+            <p>
+              Verify equipment condition, serial numbers and service history
+              before making payment.
+            </p>
+            <p>
+              Meet in a suitable location and inspect equipment where practical.
+            </p>
+          </aside>
+        </div>
+      </div>
     </main>
   );
 }
