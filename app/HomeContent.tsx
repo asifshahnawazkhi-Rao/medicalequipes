@@ -34,6 +34,13 @@ export default function HomeContent() {
   const [marketListings, setMarketListings] = useState<Listing[]>([]);
   const [pendingContactId, setPendingContactId] = useState<string | null>(null);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+useEffect(() => {
+  const session = getStoredSession();
+  setIsLoggedIn(Boolean(session?.access_token));
+}, []);
+  
   function contactSeller(id: string) {
     const session = getStoredSession();
 
@@ -85,7 +92,29 @@ useEffect(() => {
 
   return (
     <main>
-      <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions"><button className="login" onClick={() => setAuthOpen(true)}>Login</button><button className="primary" onClick={goToSell}>+ Sell Equipment</button></div></div></header>
+      <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
+  {isLoggedIn ? (
+    <button
+      className="login"
+      type="button"
+      onClick={() => window.location.assign("/dashboard")}
+    >
+      Dashboard
+    </button>
+  ) : (
+    <button
+      className="login"
+      type="button"
+      onClick={() => setAuthOpen(true)}
+    >
+      Login
+    </button>
+  )}
+
+  <button className="primary" type="button" onClick={goToSell}>
+    + Sell Equipment
+  </button>
+</div></div></header>
 
       <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /></div><select className="location" value={city} onChange={(e) => setCity(e.target.value)} aria-label="Location"><option>All Pakistan</option><option>Karachi</option><option>Lahore</option><option>Islamabad</option></select><button className="searchBtn" type="submit">Search</button></form><div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
