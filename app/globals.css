@@ -13,3 +13,263 @@
   object-fit: cover;
   display: block;
 }
+.listingDetailPage {
+  min-height: 100vh;
+  background: #f7fafb;
+}
+
+.listingDetailContainer {
+  padding-top: 34px;
+  padding-bottom: 60px;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #24435a;
+  font-weight: 700;
+}
+
+.listingDetailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+  gap: 34px;
+  align-items: start;
+}
+
+.listingGallery,
+.listingDetailInfo,
+.sellerContactCard,
+.listingSafetyCard {
+  background: #fff;
+  border: 1px solid #dfe7eb;
+  border-radius: 18px;
+}
+
+.listingGallery {
+  padding: 18px;
+}
+
+.listingMainImageWrap {
+  height: 520px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eef5f6;
+  display: grid;
+  place-items: center;
+}
+
+.listingDetailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.listingDetailPlaceholder {
+  color: #607481;
+  font-weight: 700;
+}
+
+.listingThumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.listingThumb {
+  width: 82px;
+  height: 70px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  background: #fff;
+}
+
+.listingThumb.active {
+  border-color: #078a98;
+}
+
+.listingThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listingDetailInfo {
+  padding: 28px;
+}
+
+.listingMetaTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detailBadge {
+  background: #eaf7f8;
+  color: #087f8c;
+  font-weight: 800;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.listingDetailInfo h1 {
+  margin: 16px 0 8px;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.05;
+}
+
+.listingPrice {
+  margin: 16px 0 8px;
+  font-size: 30px;
+  font-weight: 900;
+  color: #10233d;
+}
+
+.listingLocation {
+  color: #607481;
+  margin-bottom: 24px;
+}
+
+.equipmentFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.equipmentFacts div {
+  border: 1px solid #dfe7eb;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fbfdfe;
+}
+
+.equipmentFacts span,
+.sellerContactRow span {
+  display: block;
+  font-size: 12px;
+  color: #70838f;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.listingDescription {
+  border-top: 1px solid #e5ecef;
+  padding-top: 22px;
+  margin-top: 22px;
+}
+
+.listingDescription h2,
+.sellerContactCard h2,
+.listingSafetyCard h2 {
+  margin: 6px 0 14px;
+}
+
+.listingDescription p,
+.listingSafetyCard p {
+  line-height: 1.7;
+  color: #415565;
+}
+
+.listingLowerGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 34px;
+  margin-top: 34px;
+}
+
+.sellerContactCard,
+.listingSafetyCard {
+  padding: 26px;
+}
+
+.sellerContactRow {
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1f3;
+}
+
+.sellerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.sellerAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid #0a8b98;
+  font-weight: 800;
+  text-decoration: none;
+  color: #087f8c;
+  background: #fff;
+}
+
+.sellerAction.primary {
+  background: #0a8b98;
+  color: #fff;
+}
+
+.listingDetailState {
+  min-height: 65vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 40px;
+}
+
+@media (max-width: 900px) {
+  .listingDetailGrid,
+  .listingLowerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .listingMainImageWrap {
+    height: 380px;
+  }
+
+  .equipmentFacts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .listingDetailContainer {
+    padding-top: 20px;
+  }
+
+  .listingGallery,
+  .listingDetailInfo,
+  .sellerContactCard,
+  .listingSafetyCard {
+    border-radius: 12px;
+  }
+
+  .listingMainImageWrap {
+    height: 280px;
+  }
+
+  .listingDetailInfo {
+    padding: 20px;
+  }
+
+  .sellerActions {
+    flex-direction: column;
+  }
+
+  .sellerAction {
+    width: 100%;
+  }
+}
