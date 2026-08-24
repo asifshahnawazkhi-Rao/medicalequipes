@@ -436,6 +436,33 @@ export async function getSellerListings(
     };
   });
 }
+export async function getVisitingCardSignedUrl(
+  session: AuthSession,
+  path: string
+) {
+  requireUserSession(session);
+
+  if (!path) return "";
+
+  const data = await supabaseFetch<{
+    signedURL?: string;
+    signedUrl?: string;
+  }>(
+    `/storage/v1/object/sign/visiting-cards/${path}`,
+    session,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expiresIn: 3600,
+      }),
+    }
+  );
+
+  return String(data.signedURL ?? data.signedUrl ?? "");
+}
 export async function updateListing(
   session: AuthSession,
   listingId: string,
