@@ -233,6 +233,18 @@ export async function getListingById(id: string, session?: AuthSession) {
 
   const row = rows[0];
   if (!row) return null;
+  const sellerId = String(row.seller_id ?? "");
+
+let sellerProfile: Record<string, unknown> | null = null;
+
+if (sellerId) {
+  const profiles = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/profiles?select=id,full_name,phone&id=eq.${encodeURIComponent(sellerId)}&limit=1`,
+    session
+  );
+
+  sellerProfile = profiles[0] ?? null;
+}
 
   const category = row.categories as { name?: string } | null;
 
@@ -247,6 +259,7 @@ export async function getListingById(id: string, session?: AuthSession) {
     : [];
 
   return {
+    
     id: String(row.id),
     title: String(row.title ?? row.name ?? ""),
     category: String(category?.name ?? "Medical Equipment"),
@@ -256,9 +269,27 @@ export async function getListingById(id: string, session?: AuthSession) {
     description: String(row.description ?? row.details ?? ""),
     brand: String(row.brand ?? ""),
     model: String(row.model ?? ""),
-    contactName: String(row.contact_name ?? row.seller_name ?? ""),
-    contactEmail: String(row.contact_email ?? row.email ?? ""),
-    contactPhone: String(row.contact_phone ?? row.phone ?? row.phone_number ?? ""),
-    images,
+    contactName: String(
+  row.contact_name ??
+  row.seller_name ??
+  sellerProfile?.full_name ??
+  ""
+),
+
+contactEmail: String(
+  row.contact_email ??
+  row.email ??
+  ""
+),
+
+contactPhone: String(
+  row.contact_phone ??
+  row.phone ??
+  row.phone_number ??
+  sellerProfile?.phone ??
+  ""
+),
+
+images,
   };
 }
