@@ -300,7 +300,9 @@ export async function getProfile(session: AuthSession) {
   const userId = session.user!.id;
 
   const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/profiles?select=id,full_name,phone,role,status&id=eq.${encodeURIComponent(userId)}&limit=1`,
+    `/rest/v1/profiles?select=id,full_name,phone,role,status,business_name,city,visiting_card_url&id=eq.${encodeURIComponent(
+      userId
+    )}&limit=1`,
     session
   );
 
@@ -313,6 +315,9 @@ export async function getProfile(session: AuthSession) {
     phone: String(row.phone ?? ""),
     role: String(row.role ?? ""),
     status: String(row.status ?? ""),
+    businessName: String(row.business_name ?? ""),
+    city: String(row.city ?? ""),
+    visitingCardUrl: String(row.visiting_card_url ?? ""),
   };
 }
 
@@ -321,11 +326,25 @@ export async function updateProfile(
   values: {
     fullName: string;
     phone: string;
+    businessName: string;
+    city: string;
+    visitingCardUrl?: string;
   }
 ) {
   requireUserSession(session);
 
   const userId = session.user!.id;
+
+  const payload: Record<string, unknown> = {
+    full_name: values.fullName,
+    phone: values.phone,
+    business_name: values.businessName,
+    city: values.city,
+  };
+
+  if (typeof values.visitingCardUrl === "string") {
+    payload.visiting_card_url = values.visitingCardUrl;
+  }
 
   await supabaseFetch(
     `/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
@@ -335,10 +354,7 @@ export async function updateProfile(
       headers: {
         Prefer: "return=minimal",
       },
-      body: JSON.stringify({
-        full_name: values.fullName,
-        phone: values.phone,
-      }),
+      body: JSON.stringify(payload),
     }
   );
 }
