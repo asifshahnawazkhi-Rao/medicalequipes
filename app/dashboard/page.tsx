@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { clearSession, getStoredSession } from "../auth";
+import {
+  getSellerListings,
+  type SellerListing,
+} from "../supabaseData";
 
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
+  const [listings, setListings] = useState<SellerListing[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const session = getStoredSession();
@@ -15,6 +21,11 @@ export default function Dashboard() {
     }
 
     setEmail(session.user?.email);
+
+    getSellerListings(session)
+      .then(setListings)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   function logout() {
@@ -23,36 +34,119 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="dashboardPage">
-      <section className="dashboardCard">
-        <div className="brand">
-          <span className="brandMark">+</span>
-          <span>
-            Medical<span>Equipes</span>
-          </span>
+    <main className="sellerDashboardPage">
+      <header className="header">
+        <div className="container nav">
+          <a className="brand" href="/">
+            <span className="brandMark">+</span>
+            <span>
+              Medical<span>Equipes</span>
+            </span>
+          </a>
+
+          <nav>
+            <a href="/">Marketplace</a>
+            <a href="/sell">Sell Equipment</a>
+            <a href="/profile">Profile</a>
+          </nav>
         </div>
+      </header>
 
-        <h1>Dashboard</h1>
+      <div className="container sellerDashboardContainer">
+        <section className="dashboardWelcome">
+          <div>
+            <span className="eyebrow">SELLER DASHBOARD</span>
+            <h1>My Listings</h1>
+            <p>
+              Welcome{email ? `, ${email}` : ""}. Manage your marketplace
+              equipment listings.
+            </p>
+          </div>
 
-        <p>
-          Welcome{email ? `, ${email}` : ""}. You are logged in.
-        </p>
+          <div className="dashboardTopActions">
+            <button
+              className="primary"
+              type="button"
+              onClick={() => window.location.assign("/sell")}
+            >
+              + Add Listing
+            </button>
 
-        <button
-          className="primary"
-          type="button"
-          onClick={() => window.location.assign("/profile")}
-        >
-          Complete / Edit Profile
-        </button>
+            <button
+              type="button"
+              onClick={() => window.location.assign("/profile")}
+            >
+              Edit Profile
+            </button>
 
-        <button
-          type="button"
-          onClick={logout}
-        >
-          Logout
-        </button>
-      </section>
+            <button type="button" onClick={logout}>
+              Logout
+            </button>
+          </div>
+        </section>
+
+        {loading ? (
+          <div className="dashboardEmpty">Loading your listings...</div>
+        ) : listings.length === 0 ? (
+          <div className="dashboardEmpty">
+            <h2>No listings yet</h2>
+            <p>Create your first equipment listing.</p>
+
+            <button
+              className="primary"
+              type="button"
+              onClick={() => window.location.assign("/sell")}
+            >
+              + Sell Equipment
+            </button>
+          </div>
+        ) : (
+          <div className="dashboardListingGrid">
+            {listings.map((listing) => (
+              <article className="dashboardListingCard" key={listing.id}>
+                <div className="dashboardListingImage">
+                  {listing.imageUrl ? (
+                    <img src={listing.imageUrl} alt={listing.title} />
+                  ) : (
+                    <div>No image</div>
+                  )}
+
+                  <span className="dashboardStatus">
+                    {listing.status}
+                  </span>
+                </div>
+
+                <div className="dashboardListingBody">
+                  <h2>{listing.title}</h2>
+
+                  <strong>
+                    Rs. {listing.price.toLocaleString("en-PK")}
+                  </strong>
+
+                  <p>
+                    {listing.condition} · {listing.city}
+                  </p>
+
+                  <div className="dashboardListingActions">
+                    <a href={`/listing/${listing.id}`}>
+                      View Listing
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        window.location.assign(`/listing/${listing.id}`)
+                      }
+                    >
+                      Open
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }
