@@ -461,7 +461,19 @@ export async function getVisitingCardSignedUrl(
     }
   );
 
-  return String(data.signedURL ?? data.signedUrl ?? "");
+  const signedPath = String(
+    data.signedURL ?? data.signedUrl ?? ""
+  );
+
+  if (!signedPath) return "";
+
+  if (signedPath.startsWith("http")) {
+    return signedPath;
+  }
+
+  const { url } = getSupabaseConfig();
+
+  return `${url}/storage/v1${signedPath}`;
 }
 export async function updateListing(
   session: AuthSession,
