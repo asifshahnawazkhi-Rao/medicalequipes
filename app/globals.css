@@ -273,3 +273,132 @@
     width: 100%;
   }
 }
+.sellerDashboardPage {
+  min-height: 100vh;
+  background: #f6f9fa;
+}
+
+.sellerDashboardContainer {
+  padding-top: 42px;
+  padding-bottom: 70px;
+}
+
+.dashboardWelcome {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: flex-start;
+  margin-bottom: 34px;
+}
+
+.dashboardWelcome h1 {
+  font-size: 42px;
+  margin: 8px 0 10px;
+}
+
+.dashboardWelcome p {
+  color: #607481;
+}
+
+.dashboardTopActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboardListingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.dashboardListingCard {
+  background: #fff;
+  border: 1px solid #dfe7eb;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dashboardListingImage {
+  height: 210px;
+  background: #edf4f5;
+  position: relative;
+}
+
+.dashboardListingImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dashboardStatus {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.dashboardListingBody {
+  padding: 18px;
+}
+
+.dashboardListingBody h2 {
+  margin: 0 0 12px;
+  font-size: 21px;
+}
+
+.dashboardListingBody strong {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.dashboardListingBody p {
+  color: #607481;
+}
+
+.dashboardListingActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.dashboardListingActions a,
+.dashboardListingActions button {
+  border: 1px solid #0a8b98;
+  background: #fff;
+  color: #087f8c;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboardEmpty {
+  background: #fff;
+  border: 1px solid #dfe7eb;
+  border-radius: 16px;
+  padding: 50px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .dashboardWelcome {
+    flex-direction: column;
+  }
+
+  .dashboardListingGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboardListingGrid {
+    grid-template-columns: 1fr;
+  }
+}
