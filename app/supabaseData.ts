@@ -293,3 +293,52 @@ contactPhone: String(
 images,
   };
 }
+
+export async function getProfile(session: AuthSession) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/profiles?select=id,full_name,phone,role,status&id=eq.${encodeURIComponent(userId)}&limit=1`,
+    session
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: String(row.id),
+    fullName: String(row.full_name ?? ""),
+    phone: String(row.phone ?? ""),
+    role: String(row.role ?? ""),
+    status: String(row.status ?? ""),
+  };
+}
+
+export async function updateProfile(
+  session: AuthSession,
+  values: {
+    fullName: string;
+    phone: string;
+  }
+) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  await supabaseFetch(
+    `/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        full_name: values.fullName,
+        phone: values.phone,
+      }),
+    }
+  );
+}
