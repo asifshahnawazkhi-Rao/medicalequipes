@@ -98,12 +98,7 @@ async function handleDelete(listingId: string, title: string) {
             >
               + Add Listing
             </button>
-<button
-  type="button"
-  onClick={() => handleDelete(listing.id, listing.title)}
->
-  Delete
-</button>
+
             <button
               type="button"
               onClick={() => window.location.assign("/profile")}
@@ -159,20 +154,27 @@ async function handleDelete(listingId: string, title: string) {
           {listing.condition} · {listing.city}
         </p>
 
-        <div className="dashboardListingActions">
-          <a href={`/listing/${listing.id}`}>
-            View Listing
-          </a>
+       <div className="dashboardListingActions">
+  <a href={`/listing/${listing.id}`}>
+    View Listing
+  </a>
 
-          <button
-            type="button"
-            onClick={() =>
-              window.location.assign(`/listing/${listing.id}/edit`)
-            }
-          >
-            Edit
-          </button>
-        </div>
+  <button
+    type="button"
+    onClick={() =>
+      window.location.assign(`/listing/${listing.id}/edit`)
+    }
+  >
+    Edit
+  </button>
+
+  <button
+    type="button"
+    onClick={() => handleDelete(listing.id, listing.title)}
+  >
+    Delete
+  </button>
+</div>
       </div>
     </article>
   ))}
