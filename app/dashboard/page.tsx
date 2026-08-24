@@ -128,20 +128,19 @@ export default function Dashboard() {
                   </p>
 
                   <div className="dashboardListingActions">
-                    <a href={`/listing/${listing.id}`}>
-                      View Listing
-                    </a>
+  <a href={`/listing/${listing.id}`}>
+    View Listing
+  </a>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        window.location.assign(`/listing/${listing.id}`)
-                      }
-                    >
-                      Open
-                    </button>
-                  </div>
-                </div>
+  <button
+    type="button"
+    onClick={() =>
+      window.location.assign(`/listing/${listing.id}/edit`)
+    }
+  >
+    Edit
+  </button>
+</div>
               </article>
             ))}
           </div>
