@@ -14,7 +14,8 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
+const [businessName, setBusinessName] = useState("");
+const [city, setCity] = useState("");
   useEffect(() => {
     const session = getStoredSession();
 
@@ -33,6 +34,8 @@ export default function ProfilePage() {
         setPhone(profile.phone);
         setRole(profile.role);
         setStatus(profile.status);
+        setBusinessName(profile.businessName);
+setCity(profile.city);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Could not load profile.");
@@ -56,9 +59,11 @@ export default function ProfilePage() {
 
     try {
       await updateProfile(session, {
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-      });
+  fullName: fullName.trim(),
+  phone: phone.trim(),
+  businessName: businessName.trim(),
+  city: city.trim(),
+});
 
       setMessage("Profile saved successfully.");
     } catch (err) {
@@ -105,7 +110,23 @@ export default function ProfilePage() {
               placeholder="+92..."
             />
           </label>
+<label>
+  Business name
+  <input
+    value={businessName}
+    onChange={(event) => setBusinessName(event.target.value)}
+    placeholder="Business / dealer name"
+  />
+</label>
 
+<label>
+  City
+  <input
+    value={city}
+    onChange={(event) => setCity(event.target.value)}
+    placeholder="Karachi, Lahore, Islamabad..."
+  />
+</label>
           <label>
             Email
             <input value={email} disabled />
