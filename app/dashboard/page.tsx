@@ -102,48 +102,50 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="dashboardListingGrid">
-            {listings.map((listing) => (
-              <article className="dashboardListingCard" key={listing.id}>
-                <div className="dashboardListingImage">
-                  {listing.imageUrl ? (
-                    <img src={listing.imageUrl} alt={listing.title} />
-                  ) : (
-                    <div>No image</div>
-                  )}
+  {listings.map((listing) => (
+    <article className="dashboardListingCard" key={listing.id}>
+      <div className="dashboardListingImage">
+        {listing.imageUrl ? (
+          <img src={listing.imageUrl} alt={listing.title} />
+        ) : (
+          <div>No image</div>
+        )}
 
-                  <span className="dashboardStatus">
-                    {listing.status}
-                  </span>
-                </div>
+        <span className="dashboardStatus">
+          {listing.status}
+        </span>
+      </div>
 
-                <div className="dashboardListingBody">
-                  <h2>{listing.title}</h2>
+      <div className="dashboardListingBody">
+        <h2>{listing.title}</h2>
 
-                  <strong>
-                    Rs. {listing.price.toLocaleString("en-PK")}
-                  </strong>
+        <strong>
+          Rs. {listing.price.toLocaleString("en-PK")}
+        </strong>
 
-                  <p>
-                    {listing.condition} · {listing.city}
-                  </p>
+        <p>
+          {listing.condition} · {listing.city}
+        </p>
 
-                  <div className="dashboardListingActions">
-  <a href={`/listing/${listing.id}`}>
-    View Listing
-  </a>
+        <div className="dashboardListingActions">
+          <a href={`/listing/${listing.id}`}>
+            View Listing
+          </a>
 
-  <button
-    type="button"
-    onClick={() =>
-      window.location.assign(`/listing/${listing.id}/edit`)
-    }
-  >
-    Edit
-  </button>
+          <button
+            type="button"
+            onClick={() =>
+              window.location.assign(`/listing/${listing.id}/edit`)
+            }
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    </article>
+  ))}
 </div>
-              </article>
-            ))}
-          </div>
+            
         )}
       </div>
     </main>
