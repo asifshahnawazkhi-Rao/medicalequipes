@@ -342,3 +342,49 @@ export async function updateProfile(
     }
   );
 }
+export type SellerListing = {
+  id: string;
+  title: string;
+  price: number;
+  city: string;
+  condition: string;
+  status: string;
+  imageUrl: string;
+};
+
+export async function getSellerListings(
+  session: AuthSession
+): Promise<SellerListing[]> {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/listings?select=id,title,price,city,condition,status,listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
+      userId
+    )}&order=created_at.desc`,
+    session
+  );
+
+  return rows.map((row) => {
+    const images = Array.isArray(row.listing_images)
+      ? (
+          row.listing_images as Array<{
+            image_url?: string;
+            sort_order?: number;
+          }>
+        )
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      : [];
+
+    return {
+      id: String(row.id),
+      title: String(row.title ?? ""),
+      price: Number(row.price ?? 0),
+      city: String(row.city ?? ""),
+      condition: String(row.condition ?? ""),
+      status: String(row.status ?? ""),
+      imageUrl: String(images[0]?.image_url ?? ""),
+    };
+  });
+}
