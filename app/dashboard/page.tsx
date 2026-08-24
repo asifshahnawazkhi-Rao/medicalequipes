@@ -5,8 +5,10 @@ import { clearSession, getStoredSession } from "../auth";
 import {
   deleteListing,
   getSellerListings,
+  updateListingStatus,
   type SellerListing,
 } from "../supabaseData";
+
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
   const [listings, setListings] = useState<SellerListing[]>([]);
@@ -32,34 +34,66 @@ export default function Dashboard() {
     clearSession();
     window.location.assign("/");
   }
-async function handleDelete(listingId: string, title: string) {
-  const confirmed = window.confirm(
-    `Are you sure you want to delete "${title}"? This action cannot be undone.`
-  );
 
-  if (!confirmed) return;
+  async function handleDelete(listingId: string, title: string) {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${title}"? This action cannot be undone.`
+    );
 
-  const session = getStoredSession();
+    if (!confirmed) return;
 
-  if (!session?.access_token) {
-    window.location.replace("/");
-    return;
+    const session = getStoredSession();
+
+    if (!session?.access_token) {
+      window.location.replace("/");
+      return;
+    }
+
+    try {
+      await deleteListing(session, listingId);
+
+      setListings((current) =>
+        current.filter((listing) => listing.id !== listingId)
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "Could not delete listing."
+      );
+    }
   }
 
-  try {
-    await deleteListing(session, listingId);
+  async function handleStatusChange(
+    listingId: string,
+    nextStatus: "active" | "sold"
+  ) {
+    const session = getStoredSession();
 
-    setListings((current) =>
-      current.filter((listing) => listing.id !== listingId)
-    );
-  } catch (error) {
-    window.alert(
-      error instanceof Error
-        ? error.message
-        : "Could not delete listing."
-    );
+    if (!session?.access_token) {
+      window.location.replace("/");
+      return;
+    }
+
+    try {
+      await updateListingStatus(listingId, nextStatus, session);
+
+      setListings((current) =>
+        current.map((listing) =>
+          listing.id === listingId
+            ? { ...listing, status: nextStatus }
+            : listing
+        )
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "Could not update listing status."
+      );
+    }
   }
-}
+
   return (
     <main className="sellerDashboardPage">
       <header className="header">
@@ -83,7 +117,9 @@ async function handleDelete(listingId: string, title: string) {
         <section className="dashboardWelcome">
           <div>
             <span className="eyebrow">SELLER DASHBOARD</span>
+
             <h1>My Listings</h1>
+
             <p>
               Welcome{email ? `, ${email}` : ""}. Manage your marketplace
               equipment listings.
@@ -113,10 +149,13 @@ async function handleDelete(listingId: string, title: string) {
         </section>
 
         {loading ? (
-          <div className="dashboardEmpty">Loading your listings...</div>
+          <div className="dashboardEmpty">
+            Loading your listings...
+          </div>
         ) : listings.length === 0 ? (
           <div className="dashboardEmpty">
             <h2>No listings yet</h2>
+
             <p>Create your first equipment listing.</p>
 
             <button
@@ -129,59 +168,98 @@ async function handleDelete(listingId: string, title: string) {
           </div>
         ) : (
           <div className="dashboardListingGrid">
-  {listings.map((listing) => (
-    <article className="dashboardListingCard" key={listing.id}>
-      <div className="dashboardListingImage">
-        {listing.imageUrl ? (
-          <img src={listing.imageUrl} alt={listing.title} />
-        ) : (
-          <div>No image</div>
-        )}
+            {listings.map((listing) => (
+              <article
+                className="dashboardListingCard"
+                key={listing.id}
+              >
+                <div className="dashboardListingImage">
+                  {listing.imageUrl ? (
+                    <img
+                      src={listing.imageUrl}
+                      alt={listing.title}
+                    />
+                  ) : (
+                    <div>No image</div>
+                  )}
 
-        <span className="dashboardStatus">
-          {listing.status}
-        </span>
-      </div>
+                  <span className="dashboardStatus">
+                    {listing.status}
+                  </span>
+                </div>
 
-      <div className="dashboardListingBody">
-        <h2>{listing.title}</h2>
+                <div className="dashboardListingBody">
+                  <h2>{listing.title}</h2>
 
-        <strong>
-          Rs. {listing.price.toLocaleString("en-PK")}
-        </strong>
+                  <strong>
+                    Rs. {listing.price.toLocaleString("en-PK")}
+                  </strong>
 
-        <p>
-          {listing.condition} · {listing.city}
-        </p>
+                  <p>
+                    {listing.condition} · {listing.city}
+                  </p>
 
-       <div className="dashboardListingActions">
-  <a href={`/listing/${listing.id}`}>
-    View Listing
-  </a>
+                  <div className="dashboardListingActions">
+                    <a href={`/listing/${listing.id}`}>
+                      View Listing
+                    </a>
 
-  <button
-    type="button"
-    onClick={() =>
-      window.location.assign(`/listing/${listing.id}/edit`)
-    }
-  >
-    Edit
-  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        window.location.assign(
+                          `/listing/${listing.id}/edit`
+                        )
+                      }
+                    >
+                      Edit
+                    </button>
 
-  <button
-    type="button"
-    onClick={() => handleDelete(listing.id, listing.title)}
-  >
-    Delete
-  </button>
-</div>
-      </div>
-    </article>
-  ))}
-</div>
-            
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDelete(
+                          listing.id,
+                          listing.title
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+
+                    {listing.status === "active" ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleStatusChange(
+                            listing.id,
+                            "sold"
+                          )
+                        }
+                      >
+                        Mark Sold
+                      </button>
+                    ) : listing.status === "sold" ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleStatusChange(
+                            listing.id,
+                            "active"
+                          )
+                        }
+                      >
+                        Mark Active
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
       </div>
     </main>
   );
 }
+           
