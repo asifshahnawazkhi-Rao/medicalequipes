@@ -466,3 +466,17 @@ export async function deleteListing(
     }
   );
 }
+export async function updateListingStatus(
+  id: string,
+  status: "active" | "sold",
+  session: AuthSession
+) {
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(id)}`,
+    session,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }
+  );
+}
