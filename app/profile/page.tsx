@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { getStoredSession } from "../auth";
 import {
   getProfile,
+  getVisitingCardSignedUrl,
   updateProfile,
   uploadVisitingCard,
 } from "../supabaseData";
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [status, setStatus] = useState("");
 
   const [visitingCardPath, setVisitingCardPath] = useState("");
+  const [visitingCardSignedUrl, setVisitingCardSignedUrl] = useState("");
   const [visitingCardFile, setVisitingCardFile] = useState<File | null>(null);
 
   const [message, setMessage] = useState("");
@@ -45,7 +47,13 @@ export default function ProfilePage() {
         setCity(profile.city);
         setRole(profile.role);
         setStatus(profile.status);
+   
         setVisitingCardPath(profile.visitingCardUrl);
+        if (profile.visitingCardUrl) {
+  getVisitingCardSignedUrl(session, profile.visitingCardUrl)
+    .then(setVisitingCardSignedUrl)
+    .catch(console.error);
+}
       })
       .catch((err) => {
         setError(
@@ -140,9 +148,18 @@ export default function ProfilePage() {
       });
 
       setVisitingCardPath(nextVisitingCardPath);
-      setVisitingCardFile(null);
+setVisitingCardFile(null);
 
-      setMessage("Profile saved successfully.");
+if (nextVisitingCardPath) {
+  const signedUrl = await getVisitingCardSignedUrl(
+    session,
+    nextVisitingCardPath
+  );
+
+  setVisitingCardSignedUrl(signedUrl);
+}
+
+setMessage("Profile saved successfully.");
     } catch (err) {
       setMessage("");
       setError(
@@ -253,11 +270,38 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!visitingCardFile && visitingCardPath && (
-            <div className="authMessage">
-              ✓ Visiting card already uploaded
-            </div>
-          )}
+         {!visitingCardFile && visitingCardPath && (
+  <div className="authMessage">
+    ✓ Visiting card already uploaded
+  </div>
+)}
+
+{visitingCardSignedUrl && (
+  <div className="visitingCardPreview">
+    <a
+      href={visitingCardSignedUrl}
+      target="_blank"
+      rel="noreferrer"
+    >
+      View Visiting Card
+    </a>
+
+    {/\.(jpg|jpeg|png|jfif)$/i.test(visitingCardPath) && (
+      <img
+        src={visitingCardSignedUrl}
+        alt="Visiting card"
+        style={{
+          width: "100%",
+          maxHeight: "260px",
+          objectFit: "contain",
+          marginTop: "12px",
+          borderRadius: "10px",
+          border: "1px solid #dfe7eb",
+        }}
+      />
+    )}
+  </div>
+)}
 
           {role && (
             <p>
