@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../../auth";
 import { getListingById } from "../../supabaseData";
 
@@ -28,6 +28,7 @@ export default function ListingPage({
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [listingId, setListingId] = useState("");
+  const [activeImage, setActiveImage] = useState(0);
 
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -39,85 +40,219 @@ export default function ListingPage({
     const session = getStoredSession();
 
     getListingById(listingId, session ?? undefined)
-      .then((data) => setListing(data))
+      .then((data) => {
+        setListing(data);
+        setActiveImage(0);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [listingId]);
 
+  const whatsappNumber = useMemo(() => {
+    if (!listing?.contactPhone) return "";
+
+    return listing.contactPhone.replace(/[^\d]/g, "");
+  }, [listing?.contactPhone]);
+
+  const whatsappMessage = useMemo(() => {
+    if (!listing) return "";
+
+    return encodeURIComponent(
+      `Hi, I am interested in your ${listing.title} listed on MedicalEquipes.`
+    );
+  }, [listing]);
+
   if (loading) {
-    return <main className="listingDetailPage">Loading equipment...</main>;
+    return (
+      <main className="listingDetailPage">
+        <div className="listingDetailState">Loading equipment...</div>
+      </main>
+    );
   }
 
   if (!listing) {
-    return <main className="listingDetailPage">Listing not found.</main>;
+    return (
+      <main className="listingDetailPage">
+        <div className="listingDetailState">
+          <h1>Listing not found</h1>
+          <a href="/">← Back to marketplace</a>
+        </div>
+      </main>
+    );
   }
 
   return (
     <main className="listingDetailPage">
-      <a href="/">← Back to marketplace</a>
+      <header className="header">
+        <div className="container nav">
+          <a className="brand" href="/">
+            <span className="brandMark">+</span>
+            <span>
+              Medical<span>Equipes</span>
+            </span>
+          </a>
 
-      <div className="listingDetailGrid">
-        <section>
-          {listing.images.length > 0 ? (
-            <img
-              className="listingDetailImage"
-              src={listing.images[0]}
-              alt={listing.title}
-            />
-          ) : (
-            <div className="listingDetailPlaceholder">
-              No equipment image
+          <nav>
+            <a href="/#categories">Categories</a>
+            <a href="/#listings">Buy</a>
+            <a href="/sell">Sell</a>
+            <a href="/dashboard">Dashboard</a>
+          </nav>
+        </div>
+      </header>
+
+      <div className="container listingDetailContainer">
+        <a className="backLink" href="/#listings">
+          ← Back to marketplace
+        </a>
+
+        <div className="listingDetailGrid">
+          <section className="listingGallery">
+            <div className="listingMainImageWrap">
+              {listing.images.length > 0 ? (
+                <img
+                  className="listingDetailImage"
+                  src={listing.images[activeImage]}
+                  alt={listing.title}
+                />
+              ) : (
+                <div className="listingDetailPlaceholder">
+                  No equipment image
+                </div>
+              )}
             </div>
-          )}
-        </section>
 
-        <section className="listingDetailInfo">
-          <span className="eyebrow">{listing.category}</span>
+            {listing.images.length > 1 && (
+              <div className="listingThumbs">
+                {listing.images.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    className={
+                      index === activeImage
+                        ? "listingThumb active"
+                        : "listingThumb"
+                    }
+                    onClick={() => setActiveImage(index)}
+                  >
+                    <img
+                      src={image}
+                      alt={`${listing.title} image ${index + 1}`}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
 
-          <h1>{listing.title}</h1>
+          <section className="listingDetailInfo">
+            <div className="listingMetaTop">
+              <span className="eyebrow">{listing.category}</span>
+              <span className="detailBadge">{listing.condition}</span>
+            </div>
 
-          <h2>
-            Rs. {listing.price.toLocaleString("en-PK")}
-          </h2>
+            <h1>{listing.title}</h1>
 
-          <p>
-            {listing.condition} · {listing.city}
-          </p>
+            <div className="listingPrice">
+              Rs. {listing.price.toLocaleString("en-PK")}
+            </div>
 
-          {listing.brand && (
-            <p><strong>Brand:</strong> {listing.brand}</p>
-          )}
+            <p className="listingLocation">⌖ {listing.city}</p>
 
-          {listing.model && (
-            <p><strong>Model:</strong> {listing.model}</p>
-          )}
+            <div className="equipmentFacts">
+              {listing.brand && (
+                <div>
+                  <span>Brand</span>
+                  <strong>{listing.brand}</strong>
+                </div>
+              )}
 
-          <h3>Description</h3>
-          <p>{listing.description}</p>
+              {listing.model && (
+                <div>
+                  <span>Model</span>
+                  <strong>{listing.model}</strong>
+                </div>
+              )}
 
-          <div className="sellerContact">
-            <h3>Seller Contact</h3>
+              <div>
+                <span>Condition</span>
+                <strong>{listing.condition}</strong>
+              </div>
 
-            {listing.contactName && <p>{listing.contactName}</p>}
+              <div>
+                <span>Location</span>
+                <strong>{listing.city}</strong>
+              </div>
+            </div>
+
+            <div className="listingDescription">
+              <h2>Description</h2>
+              <p>{listing.description || "No description provided."}</p>
+            </div>
+          </section>
+        </div>
+
+        <div className="listingLowerGrid">
+          <section className="sellerContactCard">
+            <div>
+              <span className="eyebrow">SELLER INFORMATION</span>
+              <h2>Contact Seller</h2>
+            </div>
+
+            {listing.contactName && (
+              <div className="sellerContactRow">
+                <span>Seller</span>
+                <strong>{listing.contactName}</strong>
+              </div>
+            )}
 
             {listing.contactPhone && (
-              <p>
-                <a href={`tel:${listing.contactPhone}`}>
-                  {listing.contactPhone}
-                </a>
-              </p>
+              <div className="sellerContactRow">
+                <span>Phone</span>
+                <strong>{listing.contactPhone}</strong>
+              </div>
             )}
 
             {listing.contactEmail && (
-              <p>
-                <a href={`mailto:${listing.contactEmail}`}>
-                  {listing.contactEmail}
-                </a>
-              </p>
+              <div className="sellerContactRow">
+                <span>Email</span>
+                <strong>{listing.contactEmail}</strong>
+              </div>
             )}
-          </div>
-        </section>
-      </div>
+
+            <div className="sellerActions">
+              {listing.contactPhone && (
+                <a
+                  className="primary sellerAction"
+                  href={`tel:${listing.contactPhone}`}
+                >
+                  Call Seller
+                </a>
+              )}
+
+              {whatsappNumber && (
+                <a
+                  className="sellerAction"
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WhatsApp
+                </a>
+              )}
+
+              {listing.contactEmail && (
+                <a
+                  className="sellerAction"
+                  href={`mailto:${listing.contactEmail}?subject=${encodeURIComponent(
+                    `MedicalEquipes enquiry: ${listing.title}`
+                  )}`}
+                >
+                  Email Seller
+                </a>
+              )}
+            </div>
+         
     </main>
   );
 }
