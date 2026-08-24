@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { clearSession, getStoredSession } from "../auth";
 import {
+  deleteListing,
   getSellerListings,
   type SellerListing,
 } from "../supabaseData";
-
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
   const [listings, setListings] = useState<SellerListing[]>([]);
@@ -32,7 +32,34 @@ export default function Dashboard() {
     clearSession();
     window.location.assign("/");
   }
+async function handleDelete(listingId: string, title: string) {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete "${title}"? This action cannot be undone.`
+  );
 
+  if (!confirmed) return;
+
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  try {
+    await deleteListing(session, listingId);
+
+    setListings((current) =>
+      current.filter((listing) => listing.id !== listingId)
+    );
+  } catch (error) {
+    window.alert(
+      error instanceof Error
+        ? error.message
+        : "Could not delete listing."
+    );
+  }
+}
   return (
     <main className="sellerDashboardPage">
       <header className="header">
@@ -71,7 +98,12 @@ export default function Dashboard() {
             >
               + Add Listing
             </button>
-
+<button
+  type="button"
+  onClick={() => handleDelete(listing.id, listing.title)}
+>
+  Delete
+</button>
             <button
               type="button"
               onClick={() => window.location.assign("/profile")}
