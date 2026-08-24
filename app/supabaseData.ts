@@ -208,7 +208,39 @@ export async function uploadListingImage(session: AuthSession, listingId: string
   const { url } = getSupabaseConfig();
   return { path, publicUrl: `${url}/storage/v1/object/public/listing-images/${path}` };
 }
+export async function uploadVisitingCard(
+  session: AuthSession,
+  file: File
+) {
+  requireUserSession(session);
 
+  const user = session.user!;
+
+  const safeName =
+    file.name
+      .toLowerCase()
+      .replace(/[^a-z0-9.]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "visiting-card";
+
+  const path = `${user.id}/${crypto.randomUUID()}-${safeName}`;
+
+  await supabaseFetch(
+    `/storage/v1/object/visiting-cards/${path}`,
+    session,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "false",
+      },
+      body: file,
+    }
+  );
+
+  return {
+    path,
+  };
+}
 export async function saveListingImages(session: AuthSession, listingId: string, images: ListingImageUpload[]) {
   requireUserSession(session);
   if (!images.length) return;
