@@ -351,7 +351,7 @@ const [authOpen, setAuthOpen] = useState(false);
     </button>
   </div>
 )}
-  </div>
+
 </section>
 
           <aside className="listingSafetyCard">
