@@ -266,72 +266,91 @@ const [authOpen, setAuthOpen] = useState(false);
     </div>
   )}
 
-  {listing.contactName && (
-    <div className="sellerContactRow">
-      <span>Listing contact</span>
-      <strong>{listing.contactName}</strong>
-    </div>
-  )}
-
-  {listing.contactPhone && (
-    <div className="sellerContactRow">
-      <span>Phone / WhatsApp</span>
-      <strong>{listing.contactPhone}</strong>
-    </div>
-  )}
-
-  {listing.contactEmail && (
-    <div className="sellerContactRow">
-      <span>Email</span>
-      <strong>{listing.contactEmail}</strong>
-    </div>
-  )}
-
-  {sellerCardUrl && (
-    <div className="sellerContactRow">
-      <span>Verification</span>
-
-      <a
-        href={sellerCardUrl}
-        target="_blank"
-        rel="noreferrer"
-      >
-        View Visiting Card
-      </a>
-    </div>
-  )}
-
-  <div className="sellerActions">
-    {listing.contactPhone && (
-      <a
-        className="primary sellerAction"
-        href={`tel:${listing.contactPhone}`}
-      >
-        Call Seller
-      </a>
+ {isLoggedIn ? (
+  <>
+    {listing.contactName && (
+      <div className="sellerContactRow">
+        <span>Listing contact</span>
+        <strong>{listing.contactName}</strong>
+      </div>
     )}
 
-    {whatsappNumber && (
-      <a
-        className="sellerAction"
-        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
-        target="_blank"
-        rel="noreferrer"
-      >
-        WhatsApp
-      </a>
+    {listing.contactPhone && (
+      <div className="sellerContactRow">
+        <span>Phone / WhatsApp</span>
+        <strong>{listing.contactPhone}</strong>
+      </div>
     )}
 
     {listing.contactEmail && (
-      <a
-        className="sellerAction"
-        href={`mailto:${listing.contactEmail}?subject=${encodeURIComponent(
-          `MedicalEquipes enquiry: ${listing.title}`
-        )}`}
-      >
-        Email Seller
-      </a>
+      <div className="sellerContactRow">
+        <span>Email</span>
+        <strong>{listing.contactEmail}</strong>
+      </div>
     )}
+
+    {sellerCardUrl && (
+      <div className="sellerContactRow">
+        <span>Verification</span>
+
+        <a
+          href={sellerCardUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View Visiting Card
+        </a>
+      </div>
+    )}
+
+    <div className="sellerActions">
+      {listing.contactPhone && (
+        <a
+          className="primary sellerAction"
+          href={`tel:${listing.contactPhone}`}
+        >
+          Call Seller
+        </a>
+      )}
+
+      {whatsappNumber && (
+        <a
+          className="sellerAction"
+          href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          WhatsApp
+        </a>
+      )}
+
+      {listing.contactEmail && (
+        <a
+          className="sellerAction"
+          href={`mailto:${listing.contactEmail}?subject=${encodeURIComponent(
+            `MedicalEquipes enquiry: ${listing.title}`
+          )}`}
+        >
+          Email Seller
+        </a>
+      )}
+    </div>
+  </>
+) : (
+  <div className="sellerLoginRequired">
+    <p>
+      Login to view seller contact details.
+    </p>
+
+    <button
+      type="button"
+      className="primary"
+      onClick={() => setAuthOpen(true)}
+    >
+      Login to Contact Seller
+    </button>
+  </div>
+)}
   </div>
 </section>
 
@@ -348,6 +367,28 @@ const [authOpen, setAuthOpen] = useState(false);
           </aside>
         </div>
       </div>
+    <AuthModal
+  open={authOpen}
+  onClose={() => setAuthOpen(false)}
+  onLoginSuccess={() => {
+    setAuthOpen(false);
+    setIsLoggedIn(true);
+
+    const session = getStoredSession();
+
+    if (
+      session?.access_token &&
+      listing?.sellerVisitingCardUrl
+    ) {
+      getVisitingCardSignedUrl(
+        session,
+        listing.sellerVisitingCardUrl
+      )
+        .then(setSellerCardUrl)
+        .catch(console.error);
+    }
+  }}
+/>
     </main>
   );
 }
