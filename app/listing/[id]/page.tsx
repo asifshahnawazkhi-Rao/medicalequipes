@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../../auth";
 import { getListingById } from "../../supabaseData";
+import {
+  getListingById,
+  getVisitingCardSignedUrl,
+} from "../../supabaseData";
 
 type ListingDetail = {
   id: string;
@@ -18,6 +22,13 @@ type ListingDetail = {
   contactEmail: string;
   contactPhone: string;
   images: string[];
+  sellerId: string;
+sellerFullName: string;
+sellerBusinessName: string;
+sellerCity: string;
+sellerPhone: string;
+sellerStatus: string;
+sellerVisitingCardUrl: string;
 };
 
 export default function ListingPage({
@@ -29,6 +40,7 @@ export default function ListingPage({
   const [loading, setLoading] = useState(true);
   const [listingId, setListingId] = useState("");
   const [activeImage, setActiveImage] = useState(0);
+  const [sellerCardUrl, setSellerCardUrl] = useState("");
 
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -40,10 +52,27 @@ export default function ListingPage({
     const session = getStoredSession();
 
     getListingById(listingId, session ?? undefined)
-      .then((data) => {
-        setListing(data);
-        setActiveImage(0);
-      })
+  .then(async (data) => {
+    setListing(data);
+    setActiveImage(0);
+
+    if (
+      data?.sellerVisitingCardUrl &&
+      session?.access_token
+    ) {
+      try {
+        const signedUrl =
+          await getVisitingCardSignedUrl(
+            session,
+            data.sellerVisitingCardUrl
+          );
+
+        setSellerCardUrl(signedUrl);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [listingId]);
@@ -194,65 +223,113 @@ export default function ListingPage({
 
         <div className="listingLowerGrid">
           <section className="sellerContactCard">
-            <div>
-              <span className="eyebrow">SELLER INFORMATION</span>
-              <h2>Contact Seller</h2>
-            </div>
+  <div>
+    <span className="eyebrow">
+      SELLER INFORMATION
+    </span>
 
-            {listing.contactName && (
-              <div className="sellerContactRow">
-                <span>Seller</span>
-                <strong>{listing.contactName}</strong>
-              </div>
-            )}
+    <h2>
+      {listing.sellerBusinessName ||
+        listing.sellerFullName ||
+        "Seller"}
+    </h2>
 
-            {listing.contactPhone && (
-              <div className="sellerContactRow">
-                <span>Phone</span>
-                <strong>{listing.contactPhone}</strong>
-              </div>
-            )}
+    {listing.sellerStatus === "approved" && (
+      <p>
+        <strong>✓ Approved Seller</strong>
+      </p>
+    )}
+  </div>
 
-            {listing.contactEmail && (
-              <div className="sellerContactRow">
-                <span>Email</span>
-                <strong>{listing.contactEmail}</strong>
-              </div>
-            )}
+  {listing.sellerFullName && (
+    <div className="sellerContactRow">
+      <span>Contact person</span>
+      <strong>{listing.sellerFullName}</strong>
+    </div>
+  )}
 
-            <div className="sellerActions">
-              {listing.contactPhone && (
-                <a
-                  className="primary sellerAction"
-                  href={`tel:${listing.contactPhone}`}
-                >
-                  Call Seller
-                </a>
-              )}
+  {listing.sellerBusinessName && (
+    <div className="sellerContactRow">
+      <span>Business</span>
+      <strong>{listing.sellerBusinessName}</strong>
+    </div>
+  )}
 
-              {whatsappNumber && (
-                <a
-                  className="sellerAction"
-                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  WhatsApp
-                </a>
-              )}
+  {listing.sellerCity && (
+    <div className="sellerContactRow">
+      <span>Seller location</span>
+      <strong>{listing.sellerCity}</strong>
+    </div>
+  )}
 
-              {listing.contactEmail && (
-                <a
-                  className="sellerAction"
-                  href={`mailto:${listing.contactEmail}?subject=${encodeURIComponent(
-                    `MedicalEquipes enquiry: ${listing.title}`
-                  )}`}
-                >
-                  Email Seller
-                </a>
-              )}
-            </div>
-          </section>
+  {listing.contactName && (
+    <div className="sellerContactRow">
+      <span>Listing contact</span>
+      <strong>{listing.contactName}</strong>
+    </div>
+  )}
+
+  {listing.contactPhone && (
+    <div className="sellerContactRow">
+      <span>Phone / WhatsApp</span>
+      <strong>{listing.contactPhone}</strong>
+    </div>
+  )}
+
+  {listing.contactEmail && (
+    <div className="sellerContactRow">
+      <span>Email</span>
+      <strong>{listing.contactEmail}</strong>
+    </div>
+  )}
+
+  {sellerCardUrl && (
+    <div className="sellerContactRow">
+      <span>Verification</span>
+
+      <a
+        href={sellerCardUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        View Visiting Card
+      </a>
+    </div>
+  )}
+
+  <div className="sellerActions">
+    {listing.contactPhone && (
+      <a
+        className="primary sellerAction"
+        href={`tel:${listing.contactPhone}`}
+      >
+        Call Seller
+      </a>
+    )}
+
+    {whatsappNumber && (
+      <a
+        className="sellerAction"
+        href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        WhatsApp
+      </a>
+    )}
+
+    {listing.contactEmail && (
+      <a
+        className="sellerAction"
+        href={`mailto:${listing.contactEmail}?subject=${encodeURIComponent(
+          `MedicalEquipes enquiry: ${listing.title}`
+        )}`}
+      >
+        Email Seller
+      </a>
+    )}
+  </div>
+</section>
 
           <aside className="listingSafetyCard">
             <span className="eyebrow">BUY SAFELY</span>
