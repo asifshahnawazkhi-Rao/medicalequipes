@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../../auth";
+import { AuthModal } from "../../AuthModal";
 
 import {
   getListingById,
@@ -41,6 +42,8 @@ export default function ListingPage({
   const [listingId, setListingId] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [sellerCardUrl, setSellerCardUrl] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -50,6 +53,7 @@ export default function ListingPage({
     if (!listingId) return;
 
     const session = getStoredSession();
+    setIsLoggedIn(Boolean(session?.access_token));
 
     getListingById(listingId, session ?? undefined)
   .then(async (data) => {
