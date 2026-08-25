@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getStoredSession, type AuthSession } from "../auth";
-import { createListing, getCategories, saveListingImages, uploadListingImage, type CategoryOption } from "../supabaseData";
+import {
+  createListing,
+  getCategories,
+  getProfile,
+  saveListingImages,
+  uploadListingImage,
+  type CategoryOption,
+} from "../supabaseData";
 
 const conditions = ["New", "Like New", "Used", "Refurbished", "Demo"];
 const fallbackCategories = ["Diagnostic Equipment", "Surgical Equipment", "Patient Care", "Laboratory Equipment", "Imaging Equipment", "Dental Equipment"];
 const maxFileSize = 5 * 1024 * 1024;
 const maxFiles = 8;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
 
 export default function SellEquipmentPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -19,16 +27,57 @@ export default function SellEquipmentPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [checkingApproval, setCheckingApproval] = useState(true);
+const [sellerApproved, setSellerApproved] = useState(false);
 
   useEffect(() => {
-    const stored = getStoredSession();
-    if (!stored?.access_token) {
-      window.location.replace("/");
-      return;
+  const stored = getStoredSession();
+
+  if (!stored?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  async function loadSeller() {
+    try {
+      const profile = await getProfile(stored);
+
+      if (!profile) {
+        setError(
+          "Please complete your seller profile before listing equipment."
+        );
+        return;
+      }
+
+      const approved =
+        profile.status.toLowerCase() === "approved";
+
+      setSellerApproved(approved);
+
+      if (!approved) {
+        setError(
+          "Your seller account is pending approval. You can publish equipment after admin approval."
+        );
+        return;
+      }
+
+      setSession(stored);
+
+      const categoryRows = await getCategories(stored);
+      setCategories(categoryRows);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not verify seller approval."
+      );
+    } finally {
+      setCheckingApproval(false);
     }
-    setSession(stored);
-    getCategories(stored).then(setCategories).catch(() => setCategories([]));
-  }, []);
+  }
+
+  loadSeller();
+}, []);
 
   const categoryOptions = useMemo(() => categories, [categories]);
 
@@ -46,7 +95,13 @@ export default function SellEquipmentPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!session) return;
+
+if (!session || !sellerApproved) {
+  setError(
+    "Your seller account must be approved before publishing equipment."
+  );
+  return;
+}
     setLoading(true);
     setError("");
     setMessage("");
@@ -88,7 +143,69 @@ export default function SellEquipmentPage() {
       setLoading(false);
     }
   }
+if (checkingApproval) {
+  return (
+    <main className="sellPage">
+      <div className="container">
+        <div className="dashboardEmpty">
+          Checking seller approval...
+        </div>
+      </div>
+    </main>
+  );
+}
 
+if (!sellerApproved) {
+  return (
+    <main className="sellPage">
+      <header className="header">
+        <div className="container nav">
+          <Link className="brand" href="/">
+            <span className="brandMark">+</span>
+            <span>
+              Medical<span>Equipes</span>
+            </span>
+          </Link>
+        </div>
+      </header>
+
+      <section className="container sellFormWrap">
+        <div className="dashboardEmpty">
+          <span className="eyebrow">
+            SELLER APPROVAL
+          </span>
+
+          <h1>Seller approval required</h1>
+
+          <p>
+            Your seller account is pending approval.
+            Complete your profile and upload your Visiting Card.
+            After admin approval you will be able to publish equipment.
+          </p>
+
+          <button
+            className="primary"
+            type="button"
+            onClick={() =>
+              window.location.assign("/profile")
+            }
+          >
+            Complete Seller Profile
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              window.location.assign("/dashboard")
+            }
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+}
   return (
     <main className="sellPage">
       <header className="header"><div className="container nav"><Link className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></Link><nav><Link href="/#categories">Categories</Link><Link href="/#listings">Buy</Link><Link href="/dashboard">Dashboard</Link></nav></div></header>
