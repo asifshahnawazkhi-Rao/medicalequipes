@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../auth";
 import {
-  getPendingSellers,
+  getAdminSellers,
   getProfile,
   getVisitingCardSignedUrl,
   updateSellerApproval,
@@ -14,8 +14,11 @@ type SellerWithCard = AdminSellerProfile & {
   cardUrl?: string;
 };
 
+type SellerFilter = "pending" | "approved" | "rejected";
+
 export default function AdminPage() {
   const [sellers, setSellers] = useState<SellerWithCard[]>([]);
+  const [filter, setFilter] = useState<SellerFilter>("pending");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -39,10 +42,10 @@ export default function AdminPage() {
           return;
         }
 
-        const pending = await getPendingSellers(session);
+        const allSellers = await getAdminSellers(session);
 
         const withCards: SellerWithCard[] = await Promise.all(
-          pending.map(async (seller) => {
+          allSellers.map(async (seller) => {
             if (!seller.visitingCardUrl) {
               return seller;
             }
@@ -69,7 +72,7 @@ export default function AdminPage() {
         setError(
           err instanceof Error
             ? err.message
-            : "Could not load pending sellers."
+            : "Could not load sellers."
         );
       } finally {
         setLoading(false);
@@ -78,6 +81,28 @@ export default function AdminPage() {
 
     loadAdmin();
   }, []);
+
+  const filteredSellers = useMemo(() => {
+    return sellers.filter(
+      (seller) => seller.status === filter
+    );
+  }, [sellers, filter]);
+
+  const counts = useMemo(() => {
+    return {
+      pending: sellers.filter(
+        (seller) => seller.status === "pending"
+      ).length,
+
+      approved: sellers.filter(
+        (seller) => seller.status === "approved"
+      ).length,
+
+      rejected: sellers.filter(
+        (seller) => seller.status === "rejected"
+      ).length,
+    };
+  }, [sellers]);
 
   async function handleApproval(
     sellerId: string,
@@ -101,8 +126,13 @@ export default function AdminPage() {
       );
 
       setSellers((current) =>
-        current.filter(
-          (seller) => seller.id !== sellerId
+        current.map((seller) =>
+          seller.id === sellerId
+            ? {
+                ...seller,
+                status,
+              }
+            : seller
         )
       );
 
@@ -154,14 +184,61 @@ export default function AdminPage() {
               ADMIN DASHBOARD
             </span>
 
-            <h1>Pending Sellers</h1>
+            <h1>Seller Management</h1>
 
             <p>
-              Review seller profiles and approve or reject
-              marketplace access.
+              Review pending sellers and manage approved
+              or rejected marketplace sellers.
             </p>
           </div>
         </section>
+
+        <div
+          className="dashboardListingActions"
+          style={{ marginBottom: "24px" }}
+        >
+          <button
+            type="button"
+            className={
+              filter === "pending"
+                ? "primary"
+                : ""
+            }
+            onClick={() =>
+              setFilter("pending")
+            }
+          >
+            Pending ({counts.pending})
+          </button>
+
+          <button
+            type="button"
+            className={
+              filter === "approved"
+                ? "primary"
+                : ""
+            }
+            onClick={() =>
+              setFilter("approved")
+            }
+          >
+            Approved ({counts.approved})
+          </button>
+
+          <button
+            type="button"
+            className={
+              filter === "rejected"
+                ? "primary"
+                : ""
+            }
+            onClick={() =>
+              setFilter("rejected")
+            }
+          >
+            Rejected ({counts.rejected})
+          </button>
+        </div>
 
         {message && (
           <div className="authMessage">
@@ -175,16 +252,20 @@ export default function AdminPage() {
           </div>
         )}
 
-        {sellers.length === 0 ? (
+        {filteredSellers.length === 0 ? (
           <div className="dashboardEmpty">
-            <h2>No pending sellers</h2>
+            <h2>
+              No {filter} sellers
+            </h2>
+
             <p>
-              All seller applications have been reviewed.
+              There are currently no sellers in this
+              section.
             </p>
           </div>
         ) : (
           <div className="dashboardListingGrid">
-            {sellers.map((seller) => (
+            {filteredSellers.map((seller) => (
               <article
                 className="dashboardListingCard"
                 key={seller.id}
@@ -240,32 +321,67 @@ export default function AdminPage() {
                     </p>
                   )}
 
-                  <div className="dashboardListingActions">
-                    <button
-                      className="primary"
-                      type="button"
-                      onClick={() =>
-                        handleApproval(
-                          seller.id,
-                          "approved"
-                        )
-                      }
-                    >
-                      Approve
-                    </button>
+                  {seller.status === "pending" && (
+                    <div className="dashboardListingActions">
+                      <button
+                        className="primary"
+                        type="button"
+                        onClick={() =>
+                          handleApproval(
+                            seller.id,
+                            "approved"
+                          )
+                        }
+                      >
+                        Approve
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleApproval(
-                          seller.id,
-                          "rejected"
-                        )
-                      }
-                    >
-                      Reject
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleApproval(
+                            seller.id,
+                            "rejected"
+                          )
+                        }
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+
+                  {seller.status === "approved" && (
+                    <div className="dashboardListingActions">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleApproval(
+                            seller.id,
+                            "rejected"
+                          )
+                        }
+                      >
+                        Revoke Approval
+                      </button>
+                    </div>
+                  )}
+
+                  {seller.status === "rejected" && (
+                    <div className="dashboardListingActions">
+                      <button
+                        className="primary"
+                        type="button"
+                        onClick={() =>
+                          handleApproval(
+                            seller.id,
+                            "approved"
+                          )
+                        }
+                      >
+                        Approve Seller
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
