@@ -660,29 +660,7 @@ export async function updateListingStatus(
 }
 
 
-export async function updateSellerApproval(
-  session: AuthSession,
-  sellerId: string,
-  status: "approved" | "rejected"
-) {
-  requireUserSession(session);
 
-  await supabaseFetch(
-    `/rest/v1/profiles?id=eq.${encodeURIComponent(
-      sellerId
-    )}`,
-    session,
-    {
-      method: "PATCH",
-      headers: {
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        status,
-      }),
-    }
-  );
-}
 
       
 export type AdminSellerProfile = {
