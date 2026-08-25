@@ -21,63 +21,18 @@ export default function AdminPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-  const stored = getStoredSession();
+    const stored = getStoredSession();
 
-  if (!stored?.access_token) {
-    window.location.replace("/");
-    return;
-  }
-
-  const session = stored;
-
-  async function loadAdmin() {
-    try {
-      const profile = await getProfile(session);
-
-      if (!profile || profile.role !== "admin") {
-        window.location.replace("/dashboard");
-        return;
-      }
-
-      const pending = await getPendingSellers(session);
-
-      const withCards = await Promise.all(
-        pending.map(async (seller) => {
-          if (!seller.visitingCardUrl) {
-            return seller;
-          }
-
-          try {
-            const cardUrl =
-              await getVisitingCardSignedUrl(
-                session,
-                seller.visitingCardUrl
-              );
-
-            return {
-              ...seller,
-              cardUrl,
-            };
-          } catch {
-            return seller;
-          }
-        })
-      );
-
-      setSellers(withCards);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not load pending sellers."
-      );
-    } finally {
-      setLoading(false);
+    if (!stored?.access_token) {
+      window.location.replace("/");
+      return;
     }
-  }
 
-  loadAdmin();
-}, []);
+    const session = stored;
+
+    async function loadAdmin() {
+      try {
+        const profile = await getProfile(session);
 
         if (!profile || profile.role !== "admin") {
           window.location.replace("/dashboard");
@@ -86,7 +41,7 @@ export default function AdminPage() {
 
         const pending = await getPendingSellers(session);
 
-        const withCards = await Promise.all(
+        const withCards: SellerWithCard[] = await Promise.all(
           pending.map(async (seller) => {
             if (!seller.visitingCardUrl) {
               return seller;
@@ -102,7 +57,8 @@ export default function AdminPage() {
                 ...seller,
                 cardUrl,
               };
-            } catch {
+            } catch (err) {
+              console.error(err);
               return seller;
             }
           })
@@ -153,7 +109,7 @@ export default function AdminPage() {
       setMessage(
         status === "approved"
           ? "Seller approved successfully."
-          : "Seller rejected."
+          : "Seller rejected successfully."
       );
     } catch (err) {
       setError(
