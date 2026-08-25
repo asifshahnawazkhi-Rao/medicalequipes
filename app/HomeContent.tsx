@@ -1,5 +1,8 @@
 "use client";
-import { getStoredSession } from "./auth";
+import {
+  clearSession,
+  getStoredSession,
+} from "./auth";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getPublicListings } from "./supabaseData";
 import AuthModal from "./AuthModal";
@@ -119,23 +122,32 @@ useEffect(() => {
     <main>
       <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
   {isLoggedIn ? (
-    <button
-      className="login"
-      type="button"
-      onClick={() => window.location.assign("/dashboard")}
-    >
-      Dashboard
-    </button>
-  ) : (
-    <button
-      className="login"
-      type="button"
-      onClick={() => setAuthOpen(true)}
-    >
-      Login
-    </button>
-  )}
+  <>
+    <a href="/dashboard">Dashboard</a>
 
+    <a href="/profile">Profile</a>
+
+    <button
+      type="button"
+      className="headerLogoutButton"
+      onClick={() => {
+        clearSession();
+        setIsLoggedIn(false);
+        window.location.assign("/");
+      }}
+    >
+      Logout
+    </button>
+  </>
+) : (
+  <button
+    type="button"
+    className="headerLoginButton"
+    onClick={() => setAuthOpen(true)}
+  >
+    Login
+  </button>
+)}
   <button className="primary" type="button" onClick={goToSell}>
     + Sell Equipment
   </button>
