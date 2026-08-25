@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../../auth";
-import { AuthModal } from "../../AuthModal";
+import AuthModal from "../../AuthModal";
 
 import {
   getListingById,
