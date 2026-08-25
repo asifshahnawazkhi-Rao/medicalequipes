@@ -38,9 +38,14 @@ const [sellerApproved, setSellerApproved] = useState(false);
     return;
   }
 
+  // TypeScript ke liye confirmed non-null session
+  const authenticatedSession: AuthSession = stored;
+
   async function loadSeller() {
     try {
-      const profile = await getProfile(stored);
+      const profile = await getProfile(
+        authenticatedSession
+      );
 
       if (!profile) {
         setError(
@@ -61,9 +66,12 @@ const [sellerApproved, setSellerApproved] = useState(false);
         return;
       }
 
-      setSession(stored);
+      setSession(authenticatedSession);
 
-      const categoryRows = await getCategories(stored);
+      const categoryRows = await getCategories(
+        authenticatedSession
+      );
+
       setCategories(categoryRows);
     } catch (err) {
       setError(
