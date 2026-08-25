@@ -13,7 +13,6 @@ export function getStoredSession() {
       return null;
     }
 
-    // Read expiry directly from Supabase JWT
     try {
       const payloadPart = session.access_token.split(".")[1];
 
@@ -35,7 +34,7 @@ export function getStoredSession() {
         }
       }
     } catch {
-      // If JWT cannot be decoded, let normal auth requests validate it.
+      // Token decode fail ho to normal auth request validate karegi.
     }
 
     return session;
