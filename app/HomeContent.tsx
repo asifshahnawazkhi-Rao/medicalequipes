@@ -170,6 +170,7 @@ useEffect(() => {
   open={authOpen}
   onClose={() => setAuthOpen(false)}
   onLoginSuccess={() => {
+    setIsLoggedIn(true);
     if (pendingContactId) {
       const id = pendingContactId;
       setPendingContactId(null);
