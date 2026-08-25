@@ -257,102 +257,155 @@ export async function saveListingImages(session: AuthSession, listingId: string,
 
   await supabaseFetch('/rest/v1/listing_images', session, { method: "POST", body: JSON.stringify(rows) });
 }
-export async function getListingById(id: string, session?: AuthSession) {
-  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/listings?select=*,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(id)}&limit=1`,
-    session
-  );
-
-  const row = rows[0];
-  if (!row) return null;
-  const sellerId = String(row.seller_id ?? "");
-
-let sellerProfile: Record<string, unknown> | null = null;
-
-if (sellerId) {
-  const profiles = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/profiles?select=id,full_name,phone&id=eq.${encodeURIComponent(sellerId)}&limit=1`,
-    session
-  );
-
-  sellerProfile = profiles[0] ?? null;
-}
-
-  const category = row.categories as { name?: string } | null;
-
-  const images = Array.isArray(row.listing_images)
-    ? (row.listing_images as Array<{
-        image_url?: string;
-        sort_order?: number;
-      }>)
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-        .map((image) => String(image.image_url ?? ""))
-        .filter(Boolean)
-    : [];
-
-  return {
-    
-    id: String(row.id),
-    title: String(row.title ?? row.name ?? ""),
-    category: String(category?.name ?? "Medical Equipment"),
-    price: Number(row.price ?? row.asking_price ?? row.amount ?? 0),
-    city: String(row.city ?? row.location_city ?? row.location ?? ""),
-    condition: String(row.condition ?? row.equipment_condition ?? ""),
-    description: String(row.description ?? row.details ?? ""),
-    brand: String(row.brand ?? ""),
-    model: String(row.model ?? ""),
-    contactName: String(
-  row.contact_name ??
-  row.seller_name ??
-  sellerProfile?.full_name ??
-  ""
-),
-
-contactEmail: String(
-  row.contact_email ??
-  row.email ??
-  ""
-),
-
-contactPhone: String(
-  row.contact_phone ??
-  row.phone ??
-  row.phone_number ??
-  sellerProfile?.phone ??
-  ""
-),
-
-images,
-  };
-}
-
-export async function getProfile(session: AuthSession) {
-  requireUserSession(session);
-
-  const userId = session.user!.id;
-
-  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/profiles?select=id,full_name,phone,role,status,business_name,city,visiting_card_url&id=eq.${encodeURIComponent(
-      userId
+export async function getListingById(
+  id: string,
+  session?: AuthSession
+) {
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listings?select=*,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(
+      id
     )}&limit=1`,
     session
   );
 
   const row = rows[0];
+
   if (!row) return null;
+
+  const sellerId = String(row.seller_id ?? "");
+
+  let sellerProfile: Record<string, unknown> | null = null;
+
+  if (sellerId) {
+    const profiles = await supabaseFetch<
+      Array<Record<string, unknown>>
+    >(
+      `/rest/v1/profiles?select=id,full_name,phone,business_name,city,status,visiting_card_url&id=eq.${encodeURIComponent(
+        sellerId
+      )}&limit=1`,
+      session
+    );
+
+    sellerProfile = profiles[0] ?? null;
+  }
+
+  const category =
+    row.categories as { name?: string } | null;
+
+  const images = Array.isArray(row.listing_images)
+    ? (
+        row.listing_images as Array<{
+          image_url?: string;
+          sort_order?: number;
+        }>
+      )
+        .sort(
+          (a, b) =>
+            (a.sort_order ?? 0) -
+            (b.sort_order ?? 0)
+        )
+        .map((image) =>
+          String(image.image_url ?? "")
+        )
+        .filter(Boolean)
+    : [];
 
   return {
     id: String(row.id),
-    fullName: String(row.full_name ?? ""),
-    phone: String(row.phone ?? ""),
-    role: String(row.role ?? ""),
-    status: String(row.status ?? ""),
-    businessName: String(row.business_name ?? ""),
-    city: String(row.city ?? ""),
-    visitingCardUrl: String(row.visiting_card_url ?? ""),
+
+    title: String(
+      row.title ??
+        row.name ??
+        ""
+    ),
+
+    category: String(
+      category?.name ??
+        "Medical Equipment"
+    ),
+
+    price: Number(
+      row.price ??
+        row.asking_price ??
+        row.amount ??
+        0
+    ),
+
+    city: String(
+      row.city ??
+        row.location_city ??
+        row.location ??
+        ""
+    ),
+
+    condition: String(
+      row.condition ??
+        row.equipment_condition ??
+        ""
+    ),
+
+    description: String(
+      row.description ??
+        row.details ??
+        ""
+    ),
+
+    brand: String(row.brand ?? ""),
+
+    model: String(row.model ?? ""),
+
+    contactName: String(
+      row.contact_name ??
+        row.seller_name ??
+        sellerProfile?.full_name ??
+        ""
+    ),
+
+    contactEmail: String(
+      row.contact_email ??
+        row.email ??
+        ""
+    ),
+
+    contactPhone: String(
+      row.contact_phone ??
+        row.phone ??
+        row.phone_number ??
+        sellerProfile?.phone ??
+        ""
+    ),
+
+    sellerId,
+
+    sellerFullName: String(
+      sellerProfile?.full_name ?? ""
+    ),
+
+    sellerBusinessName: String(
+      sellerProfile?.business_name ?? ""
+    ),
+
+    sellerCity: String(
+      sellerProfile?.city ?? ""
+    ),
+
+    sellerPhone: String(
+      sellerProfile?.phone ?? ""
+    ),
+
+    sellerStatus: String(
+      sellerProfile?.status ?? ""
+    ),
+
+    sellerVisitingCardUrl: String(
+      sellerProfile?.visiting_card_url ?? ""
+    ),
+
+    images,
   };
 }
-
 export async function updateProfile(
   session: AuthSession,
   values: {
