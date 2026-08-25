@@ -21,16 +21,63 @@ export default function AdminPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const session = getStoredSession();
+  const stored = getStoredSession();
 
-    if (!session?.access_token) {
-      window.location.replace("/");
-      return;
+  if (!stored?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  const session = stored;
+
+  async function loadAdmin() {
+    try {
+      const profile = await getProfile(session);
+
+      if (!profile || profile.role !== "admin") {
+        window.location.replace("/dashboard");
+        return;
+      }
+
+      const pending = await getPendingSellers(session);
+
+      const withCards = await Promise.all(
+        pending.map(async (seller) => {
+          if (!seller.visitingCardUrl) {
+            return seller;
+          }
+
+          try {
+            const cardUrl =
+              await getVisitingCardSignedUrl(
+                session,
+                seller.visitingCardUrl
+              );
+
+            return {
+              ...seller,
+              cardUrl,
+            };
+          } catch {
+            return seller;
+          }
+        })
+      );
+
+      setSellers(withCards);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not load pending sellers."
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
-    async function loadAdmin() {
-      try {
-        const profile = await getProfile(session);
+  loadAdmin();
+}, []);
 
         if (!profile || profile.role !== "admin") {
           window.location.replace("/dashboard");
