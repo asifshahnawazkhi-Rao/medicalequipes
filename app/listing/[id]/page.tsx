@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getStoredSession } from "../../auth";
-import { getListingById } from "../../supabaseData";
+
 import {
   getListingById,
   getVisitingCardSignedUrl,
