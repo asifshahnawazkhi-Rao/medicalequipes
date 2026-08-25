@@ -39,16 +39,22 @@ export default function HomeContent() {
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
-    setIsLoggedIn(Boolean(session?.access_token));
+
+    setIsLoggedIn(
+      Boolean(session?.access_token)
+    );
   }
 
+  // Page load par check
   checkSession();
 
+  // Har 30 seconds expired session check
   const interval = window.setInterval(
     checkSession,
     30000
   );
 
+  // User tab/browser par wapas aaye to foran check
   window.addEventListener("focus", checkSession);
 
   return () => {
