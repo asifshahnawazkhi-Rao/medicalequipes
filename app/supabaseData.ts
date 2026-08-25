@@ -547,13 +547,24 @@ export async function getVisitingCardSignedUrl(
 
   if (!signedPath) return "";
 
-  if (signedPath.startsWith("http")) {
+  if (
+    signedPath.startsWith("http://") ||
+    signedPath.startsWith("https://")
+  ) {
     return signedPath;
   }
 
   const { url } = getSupabaseConfig();
 
-  return `${url}/storage/v1${signedPath}`;
+  if (signedPath.startsWith("/storage/v1/")) {
+    return `${url}${signedPath}`;
+  }
+
+  if (signedPath.startsWith("/object/")) {
+    return `${url}/storage/v1${signedPath}`;
+  }
+
+  return `${url}/storage/v1/${signedPath.replace(/^\/+/, "")}`;
 }
 export async function updateListing(
   session: AuthSession,
