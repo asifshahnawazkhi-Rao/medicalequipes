@@ -37,8 +37,27 @@ export default function HomeContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 useEffect(() => {
-  const session = getStoredSession();
-  setIsLoggedIn(Boolean(session?.access_token));
+  function checkSession() {
+    const session = getStoredSession();
+    setIsLoggedIn(Boolean(session?.access_token));
+  }
+
+  checkSession();
+
+  const interval = window.setInterval(
+    checkSession,
+    30000
+  );
+
+  window.addEventListener("focus", checkSession);
+
+  return () => {
+    window.clearInterval(interval);
+    window.removeEventListener(
+      "focus",
+      checkSession
+    );
+  };
 }, []);
   
   function contactSeller(id: string) {
