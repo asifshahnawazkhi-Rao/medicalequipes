@@ -3,6 +3,33 @@ import { AuthSession, getSupabaseConfig } from "./auth";
 export type CategoryOption = { id: string; name: string };
 
 type ListingImageUpload = { path: string; publicUrl: string };
+export async function getProfile(session: AuthSession) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/profiles?select=id,full_name,phone,role,status,business_name,city,visiting_card_url&id=eq.${encodeURIComponent(
+      userId
+    )}&limit=1`,
+    session
+  );
+
+  const row = rows[0];
+
+  if (!row) return null;
+
+  return {
+    id: String(row.id),
+    fullName: String(row.full_name ?? ""),
+    phone: String(row.phone ?? ""),
+    role: String(row.role ?? ""),
+    status: String(row.status ?? ""),
+    businessName: String(row.business_name ?? ""),
+    city: String(row.city ?? ""),
+    visitingCardUrl: String(row.visiting_card_url ?? ""),
+  };
+}
 
 type OpenApiSchema = {
   definitions?: Record<string, { properties?: Record<string, unknown> }>;
