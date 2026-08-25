@@ -719,3 +719,28 @@ export async function updateSellerApproval(
     }
   );
 }
+export async function getAdminSellers(
+  session: AuthSession
+): Promise<AdminSellerProfile[]> {
+  requireUserSession(session);
+
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url&role=eq.seller&order=created_at.desc`,
+    session
+  );
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    fullName: String(row.full_name ?? ""),
+    businessName: String(row.business_name ?? ""),
+    phone: String(row.phone ?? ""),
+    city: String(row.city ?? ""),
+    role: String(row.role ?? ""),
+    status: String(row.status ?? ""),
+    visitingCardUrl: String(
+      row.visiting_card_url ?? ""
+    ),
+  }));
+}
