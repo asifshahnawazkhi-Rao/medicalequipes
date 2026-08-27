@@ -41,6 +41,7 @@ export default function HomeContent() {
   const [maxPrice, setMaxPrice] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
 
 useEffect(() => {
   function checkSession() {
@@ -183,6 +184,21 @@ const cityOptions = useMemo(() => {
   maxPrice,
   marketListings,
 ]);
+  const sortedListings = useMemo(() => {
+  const items = [...filtered];
+
+  if (sortBy === "price-low") {
+    return items.sort((a, b) => a[9] - b[9]);
+  }
+
+  if (sortBy === "price-high") {
+    return items.sort((a, b) => b[9] - a[9]);
+  }
+
+  // getPublicListings already created_at.desc mein aa rahi hain,
+  // isliye original order = newest first.
+  return items;
+}, [filtered, sortBy]);
 
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
@@ -354,7 +370,35 @@ const cityOptions = useMemo(() => {
   }}
 >
   Clear filters
-</button> </div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
+</button> </div>
+       <div className="marketplaceControls">
+  <select
+    className="sortSelect"
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    aria-label="Sort listings"
+  >
+    <option value="newest">Newest First</option>
+    <option value="price-low">Price: Low to High</option>
+    <option value="price-high">Price: High to Low</option>
+  </select>
+
+  <button
+    type="button"
+    onClick={() => {
+      setQuery("");
+      setCity("All Pakistan");
+      setCategory("All");
+      setConditionFilter("All");
+      setMinPrice("");
+      setMaxPrice("");
+      setSortBy("newest");
+    }}
+  >
+    Clear filters
+  </button>
+</div>
+        {filtered.length > 0 ? <div className="listingGrid">{sortedListings.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
   {imageUrl ? (
     <img
       src={imageUrl}
