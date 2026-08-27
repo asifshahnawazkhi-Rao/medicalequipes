@@ -48,6 +48,7 @@ export default function HomeContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
+  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -500,7 +501,35 @@ const cityOptions = useMemo(() => {
       Join as a seller →
     </button>
   </div>
+<div className="sellerActions">
+  <button
+    type="button"
+    onClick={() => {
+      setSelectedSellerId(seller.id);
 
+      window.setTimeout(() => {
+        document
+          .getElementById("listings")
+          ?.scrollIntoView({
+            behavior: "smooth",
+          });
+      }, 20);
+    }}
+  >
+    View Listings
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      window.location.assign(
+        `/seller/${seller.id}`
+      )
+    }
+  >
+    View Seller
+  </button>
+</div>
   {publicSellers.length > 0 ? (
     <div className="sellerGrid">
       {publicSellers.map((seller) => {
