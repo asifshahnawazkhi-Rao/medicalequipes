@@ -765,3 +765,69 @@ export async function getAdminSellers(
     ),
   }));
 }
+export async function getFavoriteListingIds(
+  session: AuthSession
+): Promise<string[]> {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/favorites?select=listing_id&user_id=eq.${encodeURIComponent(
+      userId
+    )}`,
+    session
+  );
+
+  return rows
+    .map((row) => String(row.listing_id ?? ""))
+    .filter(Boolean);
+}
+
+export async function addFavorite(
+  session: AuthSession,
+  listingId: string
+) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  await supabaseFetch(
+    "/rest/v1/favorites",
+    session,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        listing_id: listingId,
+      }),
+    }
+  );
+}
+
+export async function removeFavorite(
+  session: AuthSession,
+  listingId: string
+) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  await supabaseFetch(
+    `/rest/v1/favorites?user_id=eq.${encodeURIComponent(
+      userId
+    )}&listing_id=eq.${encodeURIComponent(listingId)}`,
+    session,
+    {
+      method: "DELETE",
+      headers: {
+        Prefer: "return=minimal",
+      },
+    }
+  );
+}
