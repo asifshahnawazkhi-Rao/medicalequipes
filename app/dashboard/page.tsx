@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { clearSession, getStoredSession } from "../auth";
 import {
   deleteListing,
@@ -9,10 +9,13 @@ import {
   type SellerListing,
 } from "../supabaseData";
 
+type ListingFilter = "all" | "active" | "sold";
+
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<ListingFilter>("all");
 
   useEffect(() => {
     const session = getStoredSession();
@@ -30,12 +33,37 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  const counts = useMemo(() => {
+    return {
+      total: listings.length,
+      active: listings.filter(
+        (listing) => listing.status === "active"
+      ).length,
+      sold: listings.filter(
+        (listing) => listing.status === "sold"
+      ).length,
+    };
+  }, [listings]);
+
+  const filteredListings = useMemo(() => {
+    if (filter === "all") {
+      return listings;
+    }
+
+    return listings.filter(
+      (listing) => listing.status === filter
+    );
+  }, [listings, filter]);
+
   function logout() {
     clearSession();
     window.location.assign("/");
   }
 
-  async function handleDelete(listingId: string, title: string) {
+  async function handleDelete(
+    listingId: string,
+    title: string
+  ) {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${title}"? This action cannot be undone.`
     );
@@ -53,7 +81,9 @@ export default function Dashboard() {
       await deleteListing(session, listingId);
 
       setListings((current) =>
-        current.filter((listing) => listing.id !== listingId)
+        current.filter(
+          (listing) => listing.id !== listingId
+        )
       );
     } catch (error) {
       window.alert(
@@ -76,12 +106,19 @@ export default function Dashboard() {
     }
 
     try {
-      await updateListingStatus(listingId, nextStatus, session);
+      await updateListingStatus(
+        listingId,
+        nextStatus,
+        session
+      );
 
       setListings((current) =>
         current.map((listing) =>
           listing.id === listingId
-            ? { ...listing, status: nextStatus }
+            ? {
+                ...listing,
+                status: nextStatus,
+              }
             : listing
         )
       );
@@ -100,6 +137,7 @@ export default function Dashboard() {
         <div className="container nav">
           <a className="brand" href="/">
             <span className="brandMark">+</span>
+
             <span>
               Medical<span>Equipes</span>
             </span>
@@ -116,13 +154,15 @@ export default function Dashboard() {
       <div className="container sellerDashboardContainer">
         <section className="dashboardWelcome">
           <div>
-            <span className="eyebrow">SELLER DASHBOARD</span>
+            <span className="eyebrow">
+              SELLER DASHBOARD
+            </span>
 
             <h1>My Listings</h1>
 
             <p>
-              Welcome{email ? `, ${email}` : ""}. Manage your marketplace
-              equipment listings.
+              Welcome{email ? `, ${email}` : ""}. Manage
+              your marketplace equipment listings.
             </p>
           </div>
 
@@ -130,23 +170,95 @@ export default function Dashboard() {
             <button
               className="primary"
               type="button"
-              onClick={() => window.location.assign("/sell")}
+              onClick={() =>
+                window.location.assign("/sell")
+              }
             >
               + Add Listing
             </button>
 
             <button
               type="button"
-              onClick={() => window.location.assign("/profile")}
+              onClick={() =>
+                window.location.assign("/profile")
+              }
             >
               Edit Profile
             </button>
 
-            <button type="button" onClick={logout}>
+            <button
+              type="button"
+              onClick={logout}
+            >
               Logout
             </button>
           </div>
         </section>
+
+        {!loading && (
+          <>
+            <section className="dashboardStats">
+              <div className="dashboardStatCard">
+                <span>Total Listings</span>
+                <strong>{counts.total}</strong>
+              </div>
+
+              <div className="dashboardStatCard">
+                <span>Active</span>
+                <strong>{counts.active}</strong>
+              </div>
+
+              <div className="dashboardStatCard">
+                <span>Sold</span>
+                <strong>{counts.sold}</strong>
+              </div>
+            </section>
+
+            <div className="dashboardFilterTabs">
+              <button
+                type="button"
+                className={
+                  filter === "all"
+                    ? "primary"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("all")
+                }
+              >
+                All ({counts.total})
+              </button>
+
+              <button
+                type="button"
+                className={
+                  filter === "active"
+                    ? "primary"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("active")
+                }
+              >
+                Active ({counts.active})
+              </button>
+
+              <button
+                type="button"
+                className={
+                  filter === "sold"
+                    ? "primary"
+                    : ""
+                }
+                onClick={() =>
+                  setFilter("sold")
+                }
+              >
+                Sold ({counts.sold})
+              </button>
+            </div>
+          </>
+        )}
 
         {loading ? (
           <div className="dashboardEmpty">
@@ -156,19 +268,34 @@ export default function Dashboard() {
           <div className="dashboardEmpty">
             <h2>No listings yet</h2>
 
-            <p>Create your first equipment listing.</p>
+            <p>
+              Create your first equipment listing.
+            </p>
 
             <button
               className="primary"
               type="button"
-              onClick={() => window.location.assign("/sell")}
+              onClick={() =>
+                window.location.assign("/sell")
+              }
             >
               + Sell Equipment
             </button>
           </div>
+        ) : filteredListings.length === 0 ? (
+          <div className="dashboardEmpty">
+            <h2>
+              No {filter} listings
+            </h2>
+
+            <p>
+              There are currently no listings in this
+              section.
+            </p>
+          </div>
         ) : (
           <div className="dashboardListingGrid">
-            {listings.map((listing) => (
+            {filteredListings.map((listing) => (
               <article
                 className="dashboardListingCard"
                 key={listing.id}
@@ -192,15 +319,21 @@ export default function Dashboard() {
                   <h2>{listing.title}</h2>
 
                   <strong>
-                    Rs. {listing.price.toLocaleString("en-PK")}
+                    Rs.{" "}
+                    {listing.price.toLocaleString(
+                      "en-PK"
+                    )}
                   </strong>
 
                   <p>
-                    {listing.condition} · {listing.city}
+                    {listing.condition} ·{" "}
+                    {listing.city}
                   </p>
 
                   <div className="dashboardListingActions">
-                    <a href={`/listing/${listing.id}`}>
+                    <a
+                      href={`/listing/${listing.id}`}
+                    >
                       View Listing
                     </a>
 
@@ -262,4 +395,3 @@ export default function Dashboard() {
     </main>
   );
 }
-           
