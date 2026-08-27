@@ -646,3 +646,57 @@
 .sellerActions button:hover {
   background: #eef9fa;
 }
+.dashboardStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.dashboardStatCard {
+  padding: 20px;
+  border: 1px solid #dfe7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.dashboardStatCard span {
+  display: block;
+  margin-bottom: 8px;
+  color: #5c7184;
+  font-size: 14px;
+}
+
+.dashboardStatCard strong {
+  font-size: 30px;
+  color: #10233f;
+}
+
+.dashboardFilterTabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.dashboardFilterTabs button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #d7e1e5;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboardFilterTabs button.primary {
+  background: #078a98;
+  color: #fff;
+  border-color: #078a98;
+}
+
+@media (max-width: 700px) {
+  .dashboardStats {
+    grid-template-columns: 1fr;
+  }
+}
