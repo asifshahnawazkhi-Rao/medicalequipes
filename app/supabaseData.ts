@@ -864,3 +864,60 @@ export async function getPublicSellers(): Promise<PublicSeller[]> {
     ),
   }));
 }
+export async function getPublicSellerById(
+  sellerId: string
+): Promise<PublicSeller | null> {
+  const sellers = await getPublicSellers();
+
+  return (
+    sellers.find(
+      (seller) => seller.id === sellerId
+    ) ?? null
+  );
+}
+
+export async function getPublicSellerListings(
+  sellerId: string
+): Promise<PublicListing[]> {
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,categories(name),listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
+      sellerId
+    )}&status=eq.active&order=created_at.desc`
+  );
+
+  return rows.map((row) => {
+    const category =
+      row.categories as { name?: string } | null;
+
+    const images = Array.isArray(row.listing_images)
+      ? (
+          row.listing_images as Array<{
+            image_url?: string;
+            sort_order?: number;
+          }>
+        ).sort(
+          (a, b) =>
+            (a.sort_order ?? 0) -
+            (b.sort_order ?? 0)
+        )
+      : [];
+
+    return {
+      id: String(row.id ?? ""),
+      title: String(row.title ?? ""),
+      category: String(
+        category?.name ?? "Medical Equipment"
+      ),
+      price: Number(row.price ?? 0),
+      city: String(row.city ?? ""),
+      condition: String(row.condition ?? ""),
+      brand: String(row.brand ?? ""),
+      model: String(row.model ?? ""),
+      imageUrl: String(
+        images[0]?.image_url ?? ""
+      ),
+    };
+  });
+}
