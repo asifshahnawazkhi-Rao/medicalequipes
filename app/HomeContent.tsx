@@ -9,7 +9,9 @@ import {
   getCategories,
   getFavoriteListingIds,
   getPublicListings,
+  getPublicSellers,
   removeFavorite,
+  type PublicSeller,
   type CategoryOption,
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
@@ -45,7 +47,7 @@ export default function HomeContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
-
+  const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -125,6 +127,14 @@ useEffect(() => {
       );
     })
     .catch(() => setMarketListings([]));
+}, []);
+  useEffect(() => {
+  getPublicSellers()
+    .then(setPublicSellers)
+    .catch((error) => {
+      console.error("Could not load verified sellers:", error);
+      setPublicSellers([]);
+    });
 }, []);
 const cityOptions = useMemo(() => {
   const uniqueCities = Array.from(
@@ -470,7 +480,90 @@ const cityOptions = useMemo(() => {
   Show all equipment
 </button></div>}</div></section>
 
-      <section id="sellers" className="section container"><div className="sectionHead"><div><span className="eyebrow">TRUSTED NETWORK</span><h2>Verified Sellers</h2></div><button type="button" onClick={() => setAuthOpen(true)}>Join as a seller →</button></div><div className="sellerGrid">{["ABC Medical Equipment","MediTech Pakistan","HealthCare Solutions"].map((s,i)=><article className="seller" key={s}><div className="avatar">{s[0]}</div><div><h3>{s}</h3><p>✓ Verified Dealer · {["Karachi","Lahore","Islamabad"][i]}</p><small>{[124,86,61][i]} active listings · ★ 4.{8-i}</small></div><button type="button" onClick={() => { setCity(["Karachi","Lahore","Islamabad"][i]); search(); }}>View Listings</button></article>)}</div></section>
+      <section id="sellers" className="section container">
+  <div className="sectionHead">
+    <div>
+      <span className="eyebrow">TRUSTED NETWORK</span>
+      <h2>Verified Sellers</h2>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        if (isLoggedIn) {
+          window.location.assign("/profile");
+        } else {
+          setAuthOpen(true);
+        }
+      }}
+    >
+      Join as a seller →
+    </button>
+  </div>
+
+  {publicSellers.length > 0 ? (
+    <div className="sellerGrid">
+      {publicSellers.map((seller) => {
+        const sellerName =
+          seller.businessName ||
+          seller.fullName ||
+          "Verified Seller";
+
+        return (
+          <article className="seller" key={seller.id}>
+            <div className="avatar">
+              {sellerName.charAt(0).toUpperCase()}
+            </div>
+
+            <div>
+              <h3>{sellerName}</h3>
+
+              <p>
+                ✓ Verified Seller
+                {seller.city ? ` · ${seller.city}` : ""}
+              </p>
+
+              <small>
+                {seller.activeListingCount} active{" "}
+                {seller.activeListingCount === 1
+                  ? "listing"
+                  : "listings"}
+              </small>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setCategory("All");
+                setCity(
+                  seller.city || "All Pakistan"
+                );
+
+                window.setTimeout(() => {
+                  document
+                    .getElementById("listings")
+                    ?.scrollIntoView({
+                      behavior: "smooth",
+                    });
+                }, 20);
+              }}
+            >
+              View Listings
+            </button>
+          </article>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="emptyState">
+      <h3>No verified sellers yet</h3>
+      <p>
+        Approved marketplace sellers will appear here.
+      </p>
+    </div>
+  )}
+</section>
 
       <section id="sell" className="sellCta"><div className="container sellInner"><div><span className="eyebrow">GROW YOUR BUSINESS</span><h2>Have medical equipment to sell?</h2><p>Reach serious buyers and healthcare businesses across Pakistan.</p></div><button className="lightBtn" onClick={goToSell}>+ Post Equipment</button></div></section>
 
