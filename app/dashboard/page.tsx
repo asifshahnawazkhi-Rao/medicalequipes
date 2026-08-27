@@ -219,8 +219,12 @@ export default function Dashboard() {
                 <span>Sold</span>
                 <strong>{counts.sold}</strong>
               </div>
-            </section>
-
+          
+<div className="dashboardStatCard">
+  <span>Inactive</span>
+  <strong>{counts.draft}</strong>
+</div>
+       </section>
             <div className="dashboardFilterTabs">
               <button
                 type="button"
