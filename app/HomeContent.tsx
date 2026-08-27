@@ -575,3 +575,105 @@ const cityOptions = useMemo(() => {
     </div>
   )}
 </section>
+<section id="sell" className="sellCta">
+  <div className="container sellInner">
+    <div>
+      <span className="eyebrow">GROW YOUR BUSINESS</span>
+      <h2>Have medical equipment to sell?</h2>
+      <p>
+        Reach serious buyers and healthcare businesses across Pakistan.
+      </p>
+    </div>
+
+    <button className="lightBtn" onClick={goToSell}>
+      + Post Equipment
+    </button>
+  </div>
+</section>
+
+<section className="section container steps">
+  <div className="sectionHead center">
+    <div>
+      <span className="eyebrow">SIMPLE PROCESS</span>
+      <h2>How MedicalEquipes Works</h2>
+    </div>
+  </div>
+
+  <div className="stepGrid">
+    {[
+      ["01", "Register", "Create your account and submit your details."],
+      ["02", "Get Approved", "Our team verifies your profile before selling."],
+      ["03", "List Equipment", "Add photos, specifications and pricing."],
+      ["04", "Connect", "Chat or contact buyers and sellers directly."],
+    ].map(([n, t, d]) => (
+      <div className="step" key={n}>
+        <b>{n}</b>
+        <h3>{t}</h3>
+        <p>{d}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<footer>
+  <div className="container footerGrid">
+    <div>
+      <div className="brand footerBrand">
+        <span className="brandMark">+</span>
+        <span>
+          Medical<span>Equipes</span>
+        </span>
+      </div>
+
+      <p>
+        The professional marketplace for medical and surgical equipment.
+      </p>
+    </div>
+
+    <div>
+      <b>Marketplace</b>
+      <a href="#listings">Browse Equipment</a>
+      <a href="#categories">Categories</a>
+      <a href="#sellers">Verified Sellers</a>
+    </div>
+
+    <div>
+      <b>Company</b>
+      <a href="#top">About Us</a>
+      <a href="mailto:support@medicalequipes.com">Contact</a>
+      <a href="#top">Help Center</a>
+    </div>
+
+    <div>
+      <b>Account</b>
+      <button onClick={() => setAuthOpen(true)}>
+        Login / Register
+      </button>
+
+      <button onClick={goToSell}>
+        Sell Equipment
+      </button>
+    </div>
+  </div>
+
+  <div className="container copyright">
+    © 2026 MedicalEquipes. All rights reserved.
+  </div>
+</footer>
+
+<AuthModal
+  open={authOpen}
+  onClose={() => setAuthOpen(false)}
+  onLoginSuccess={() => {
+    setIsLoggedIn(true);
+
+    if (pendingContactId) {
+      const id = pendingContactId;
+      setPendingContactId(null);
+      window.location.assign(`/listing/${id}`);
+    }
+  }}
+/>
+</main>
+);
+}
