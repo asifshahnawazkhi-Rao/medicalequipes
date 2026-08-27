@@ -228,102 +228,37 @@ const cityOptions = useMemo(() => {
   </button>
 </div></div></header>
 
-      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /> <input
-  className="location"
-  type="number"
-  min="0"
-  value={minPrice}
-  onChange={(e) => setMinPrice(e.target.value)}
-  placeholder="Min Price"
-  aria-label="Minimum price"
-/>
-
-<input
-  className="location"
-  type="number"
-  min="0"
-  value={maxPrice}
-  onChange={(e) => setMaxPrice(e.target.value)}
-  placeholder="Max Price"
-  aria-label="Maximum price"
-/> </div><select
-  className="location"
-  value={city}
-  onChange={(e) => setCity(e.target.value)}
-  aria-label="Location"
->
-  {cityOptions.map((option) => (
-    <option key={option} value={option}>
-      {option}
-    </option>
-  ))} <select
-  className="location"
-  value={conditionFilter}
-  onChange={(e) =>
-    setConditionFilter(e.target.value)
-  }
-  aria-label="Condition"
->
-  {conditionOptions.map((option) => (
-    <option key={option} value={option}>
-      {option === "All"
-        ? "All Conditions"
-        : option}
-    </option>
-  ))}
-</select>
-</select><button className="searchBtn" type="submit">Search</button> <button
-  type="button"
-  className="filterToggle"
-  onClick={() => setShowFilters((value) => !value)}
-
->
- {showFilters && (
-  <div className="advancedFilters">
-    <select
-      value={conditionFilter}
-      onChange={(e) => setConditionFilter(e.target.value)}
-      aria-label="Condition"
-    >
-      {conditionOptions.map((option) => (
-        <option key={option} value={option}>
-          {option === "All" ? "All Conditions" : option}
-        </option>
-      ))}
-    </select>
+      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p>
+      <form className="searchBox googleSearchBox" onSubmit={search}>
+  <div className="searchInput googleSearchInput">
+    <span className="searchIcon">⌕</span>
 
     <input
-      type="number"
-      min="0"
-      value={minPrice}
-      onChange={(e) => setMinPrice(e.target.value)}
-      placeholder="Min Price"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder="Search equipment, brand or model..."
+      aria-label="Search equipment"
     />
-
-    <input
-      type="number"
-      min="0"
-      value={maxPrice}
-      onChange={(e) => setMaxPrice(e.target.value)}
-      placeholder="Max Price"
-    />
-
-    <select
-      value={category}
-      onChange={(e) => setCategory(e.target.value)}
-      aria-label="Category"
-    >
-      <option value="All">All Categories</option>
-
-      {categoryOptions.map((cat) => (
-        <option key={cat.id} value={cat.name}>
-          {cat.name}
-        </option>
-      ))}
-    </select>
   </div>
-)} {showFilters ? "Hide Filters" : "More Filters"}
-</button> </form><div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
+
+  <select
+    className="location googleLocation"
+    value={city}
+    onChange={(e) => setCity(e.target.value)}
+    aria-label="Location"
+  >
+    {cityOptions.map((option) => (
+      <option key={option} value={option}>
+        {option}
+      </option>
+    ))}
+  </select>
+
+  <button className="searchBtn" type="submit">
+    Search
+  </button>
+</form>
+        <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
