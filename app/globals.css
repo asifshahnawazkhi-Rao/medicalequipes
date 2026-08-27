@@ -626,3 +626,23 @@
     align-items: stretch;
   }
 }
+.sellerActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.sellerActions button {
+  flex: 1;
+  min-height: 42px;
+  border: 1px solid #078a98;
+  border-radius: 10px;
+  background: #fff;
+  color: #078a98;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sellerActions button:hover {
+  background: #eef9fa;
+}
