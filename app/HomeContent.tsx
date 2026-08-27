@@ -257,7 +257,62 @@ const cityOptions = useMemo(() => {
   <button className="searchBtn" type="submit">
     Search
   </button>
+        
 </form>
+        <button
+  type="button"
+  className="filterToggle"
+  onClick={() => setShowFilters((value) => !value)}
+>
+  <span>☷</span>
+  {showFilters ? "Hide Filters" : "More Filters"}
+</button>
+
+{showFilters && (
+  <div className="advancedFilters">
+    <select
+      value={conditionFilter}
+      onChange={(e) => setConditionFilter(e.target.value)}
+      aria-label="Condition"
+    >
+      {conditionOptions.map((option) => (
+        <option key={option} value={option}>
+          {option === "All" ? "All Conditions" : option}
+        </option>
+      ))}
+    </select>
+
+    <input
+      type="number"
+      min="0"
+      value={minPrice}
+      onChange={(e) => setMinPrice(e.target.value)}
+      placeholder="Min Price"
+    />
+
+    <input
+      type="number"
+      min="0"
+      value={maxPrice}
+      onChange={(e) => setMaxPrice(e.target.value)}
+      placeholder="Max Price"
+    />
+
+    <select
+      value={category}
+      onChange={(e) => setCategory(e.target.value)}
+      aria-label="Category"
+    >
+      <option value="All">All Categories</option>
+
+      {categoryOptions.map((cat) => (
+        <option key={cat.id} value={cat.name}>
+          {cat.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
         <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
