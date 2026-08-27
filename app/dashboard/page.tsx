@@ -9,7 +9,11 @@ import {
   type SellerListing,
 } from "../supabaseData";
 
-type ListingFilter = "all" | "active" | "sold";
+type ListingFilter =
+  | "all"
+  | "active"
+  | "sold"
+  | "draft";
 
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
@@ -42,6 +46,9 @@ export default function Dashboard() {
       sold: listings.filter(
         (listing) => listing.status === "sold"
       ).length,
+      draft: listings.filter(
+  (listing) => listing.status === "draft"
+).length,
     };
   }, [listings]);
 
@@ -96,7 +103,7 @@ export default function Dashboard() {
 
   async function handleStatusChange(
     listingId: string,
-    nextStatus: "active" | "sold"
+    nextStatus: "active" | "sold" | "draft"
   ) {
     const session = getStoredSession();
 
@@ -256,6 +263,19 @@ export default function Dashboard() {
               >
                 Sold ({counts.sold})
               </button>
+              <button
+  type="button"
+  className={
+    filter === "draft"
+      ? "primary"
+      : ""
+  }
+  onClick={() =>
+    setFilter("draft")
+  }
+>
+  Inactive ({counts.draft})
+</button>
             </div>
           </>
         )}
@@ -361,30 +381,56 @@ export default function Dashboard() {
                     </button>
 
                     {listing.status === "active" ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleStatusChange(
-                            listing.id,
-                            "sold"
-                          )
-                        }
-                      >
-                        Mark Sold
-                      </button>
-                    ) : listing.status === "sold" ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleStatusChange(
-                            listing.id,
-                            "active"
-                          )
-                        }
-                      >
-                        Mark Active
-                      </button>
-                    ) : null}
+  <>
+    <button
+      type="button"
+      onClick={() =>
+        handleStatusChange(
+          listing.id,
+          "sold"
+        )
+      }
+    >
+      Mark Sold
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        handleStatusChange(
+          listing.id,
+          "draft"
+        )
+      }
+    >
+      Deactivate
+    </button>
+  </>
+) : listing.status === "sold" ? (
+  <button
+    type="button"
+    onClick={() =>
+      handleStatusChange(
+        listing.id,
+        "active"
+      )
+    }
+  >
+    Mark Active
+  </button>
+) : listing.status === "draft" ? (
+  <button
+    type="button"
+    onClick={() =>
+      handleStatusChange(
+        listing.id,
+        "active"
+      )
+    }
+  >
+    Reactivate
+  </button>
+) : null}
                   </div>
                 </div>
               </article>
