@@ -831,3 +831,36 @@ export async function removeFavorite(
     }
   );
 }
+export type PublicSeller = {
+  id: string;
+  fullName: string;
+  businessName: string;
+  city: string;
+  activeListingCount: number;
+};
+
+export async function getPublicSellers(): Promise<PublicSeller[]> {
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    "/rest/v1/rpc/get_public_sellers",
+    undefined,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    }
+  );
+
+  return rows.map((row) => ({
+    id: String(row.id ?? ""),
+    fullName: String(row.full_name ?? ""),
+    businessName: String(row.business_name ?? ""),
+    city: String(row.city ?? ""),
+    activeListingCount: Number(
+      row.active_listing_count ?? 0
+    ),
+  }));
+}
