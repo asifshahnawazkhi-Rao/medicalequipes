@@ -9,13 +9,15 @@ import AuthModal from "./AuthModal";
 
 
 type Listing = [
-  string,
-  string,
-  string,
-  string,
-  string,
-  string,
-  string
+  string, // id
+  string, // title
+  string, // category
+  string, // price
+  string, // city
+  string, // condition
+  string, // imageUrl
+  string, // brand
+  string  // model
 ];
 const categories = [
   ["Diagnostic Equipment", "Ultrasound, ECG, patient monitors and more", "01"],
@@ -94,6 +96,8 @@ useEffect(() => {
   item.city,
   item.condition,
   item.imageUrl,
+  item.brand,
+  item.model,
 ])
       );
     })
@@ -102,11 +106,27 @@ useEffect(() => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return marketListings.filter(([, title, cat, , listingCity]) =>
-      (!q || `${title} ${cat} ${listingCity}`.toLowerCase().includes(q)) &&
-      (category === "All" || cat === category) &&
-      (city === "All Pakistan" || listingCity === city)
-    );
+    return marketListings.filter(
+  ([
+    ,
+    title,
+    cat,
+    ,
+    listingCity,
+    condition,
+    ,
+    brand,
+    model,
+  ]) =>
+    (
+      !q ||
+      `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`
+        .toLowerCase()
+        .includes(q)
+    ) &&
+    (category === "All" || cat === category) &&
+    (city === "All Pakistan" || listingCity === city)
+);
  }, [query, city, category, marketListings]);
 
   function goToSell() { window.location.assign("/sell"); }
