@@ -446,7 +446,14 @@ const cityOptions = useMemo(() => {
     />
   ) : (
     <div className="equipmentShape" />
-  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(id)}{favorites.includes(title) ? "♥" : "♡"} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
+  )}<span className="badge">{condition}</span><button
+  className="heart"
+  type="button"
+  onClick={() => toggleFavorite(id)}
+  aria-label="Save listing"
+>
+  {favorites.includes(id) ? "♥" : "♡"}
+</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
   Contact Seller
 </button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button
   className="primary"
