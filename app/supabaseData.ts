@@ -667,9 +667,27 @@ export async function deleteListing(
 }
 export async function updateListingStatus(
   id: string,
-  status: "active" | "sold",
+  status: "active" | "sold" | "draft",
   session: AuthSession
 ) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(
+      id
+    )}&seller_id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+} {
   await supabaseFetch(
     `/rest/v1/listings?id=eq.${encodeURIComponent(id)}`,
     session,
