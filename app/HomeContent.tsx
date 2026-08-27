@@ -103,7 +103,18 @@ useEffect(() => {
     })
     .catch(() => setMarketListings([]));
 }, []);
+const cityOptions = useMemo(() => {
+  const uniqueCities = Array.from(
+    new Set(
+      marketListings
+        .map(([, , , , listingCity]) => listingCity.trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
+  return ["All Pakistan", ...uniqueCities];
+}, [marketListings]);
+  
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return marketListings.filter(
@@ -173,7 +184,18 @@ useEffect(() => {
   </button>
 </div></div></header>
 
-      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /></div><select className="location" value={city} onChange={(e) => setCity(e.target.value)} aria-label="Location"><option>All Pakistan</option><option>Karachi</option><option>Lahore</option><option>Islamabad</option></select><button className="searchBtn" type="submit">Search</button></form><div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
+      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /></div><select
+  className="location"
+  value={city}
+  onChange={(e) => setCity(e.target.value)}
+  aria-label="Location"
+>
+  {cityOptions.map((option) => (
+    <option key={option} value={option}>
+      {option}
+    </option>
+  ))}
+</select><button className="searchBtn" type="submit">Search</button></form><div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
