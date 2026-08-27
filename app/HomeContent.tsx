@@ -4,7 +4,11 @@ import {
   getStoredSession,
 } from "./auth";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { getPublicListings } from "./supabaseData";
+import {
+  getCategories,
+  getPublicListings,
+  type CategoryOption,
+} from "./supabaseData";
 import AuthModal from "./AuthModal";
 
 
@@ -19,14 +23,6 @@ type Listing = [
   string, // brand
   string  // model
 ];
-const categories = [
-  ["Diagnostic Equipment", "Ultrasound, ECG, patient monitors and more", "01"],
-  ["Surgical Equipment", "OT tables, surgical instruments and accessories", "02"],
-  ["Patient Care", "Beds, wheelchairs, stretchers and mobility", "03"],
-  ["Laboratory Equipment", "Analyzers, microscopes and lab systems", "04"],
-  ["Imaging Equipment", "X-Ray, CT, MRI and imaging accessories", "05"],
-  ["Dental Equipment", "Dental chairs, units and instruments", "06"],
-];
 
 
 
@@ -38,6 +34,7 @@ export default function HomeContent() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [marketListings, setMarketListings] = useState<Listing[]>([]);
   const [pendingContactId, setPendingContactId] = useState<string | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -69,6 +66,11 @@ useEffect(() => {
       checkSession
     );
   };
+}, []);
+  useEffect(() => {
+  getCategories()
+    .then(setCategoryOptions)
+    .catch(() => setCategoryOptions([]));
 }, []);
   
   function contactSeller(id: string) {
@@ -199,7 +201,30 @@ const cityOptions = useMemo(() => {
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
-      <section id="categories" className="section container"><div className="sectionHead"><div><span className="eyebrow">EXPLORE</span><h2>Browse by Category</h2></div><button type="button" onClick={() => chooseCategory("All")}>View all categories →</button></div><div className="categoryGrid">{categories.map(([title, desc, n]) => <button type="button" className={`category ${category === title ? "active" : ""}`} key={title} onClick={() => chooseCategory(title)}><div className="catIcon">{n}</div><h3>{title}</h3><p>{desc}</p><span>Explore →</span></button>)}</div></section>
+      <section id="categories" className="section container"><div className="sectionHead"><div><span className="eyebrow">EXPLORE</span><h2>Browse by Category</h2></div><button type="button" onClick={() => chooseCategory("All")}>View all categories →</button></div><div className="categoryGrid">
+  {categoryOptions.map((cat, index) => (
+    <button
+      type="button"
+      className={`category ${
+        category === cat.name ? "active" : ""
+      }`}
+      key={cat.id}
+      onClick={() => chooseCategory(cat.name)}
+    >
+      <div className="catIcon">
+        {String(index + 1).padStart(2, "0")}
+      </div>
+
+      <h3>{cat.name}</h3>
+
+      <p>
+        Browse available {cat.name.toLowerCase()} listings.
+      </p>
+
+      <span>Explore →</span>
+    </button>
+  ))}
+</div></section>
 
       <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
   {imageUrl ? (
