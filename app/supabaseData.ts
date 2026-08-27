@@ -666,7 +666,7 @@ export async function deleteListing(
   );
 }
 export async function updateListingStatus(
-  id: string,
+  listingId: string,
   status: "active" | "sold" | "draft",
   session: AuthSession
 ) {
@@ -676,7 +676,7 @@ export async function updateListingStatus(
 
   await supabaseFetch(
     `/rest/v1/listings?id=eq.${encodeURIComponent(
-      id
+      listingId
     )}&seller_id=eq.${encodeURIComponent(userId)}`,
     session,
     {
@@ -684,21 +684,12 @@ export async function updateListingStatus(
       headers: {
         Prefer: "return=minimal",
       },
-      body: JSON.stringify({ status }),
-    }
-  );
-} {
-  await supabaseFetch(
-    `/rest/v1/listings?id=eq.${encodeURIComponent(id)}`,
-    session,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({
+        status,
+      }),
     }
   );
 }
-
-
 
 
       
