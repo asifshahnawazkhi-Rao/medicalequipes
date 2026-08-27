@@ -413,3 +413,39 @@
     grid-template-columns: 1fr;
   }
 }
+.filterToggle {
+  margin-top: 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.advancedFilters {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.advancedFilters select,
+.advancedFilters input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d7e1e5;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: white;
+}
+
+@media (max-width: 900px) {
+  .advancedFilters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .advancedFilters {
+    grid-template-columns: 1fr;
+  }
+}
