@@ -254,7 +254,7 @@ const cityOptions = useMemo(() => {
   {isLoggedIn ? (
   <>
     <a href="/dashboard">Dashboard</a>
-
+    <a href="/favorites">Favorites</a>
     <a href="/profile">Profile</a>
 
     <button
