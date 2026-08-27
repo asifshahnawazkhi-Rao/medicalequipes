@@ -35,6 +35,7 @@ export default function HomeContent() {
   const [marketListings, setMarketListings] = useState<Listing[]>([]);
   const [pendingContactId, setPendingContactId] = useState<string | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [conditionFilter, setConditionFilter] = useState("All");
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -116,7 +117,19 @@ const cityOptions = useMemo(() => {
 
   return ["All Pakistan", ...uniqueCities];
 }, [marketListings]);
-  
+  const conditionOptions = useMemo(() => {
+  const uniqueConditions = Array.from(
+    new Set(
+      marketListings
+        .map(([, , , , , listingCondition]) =>
+          listingCondition.trim()
+        )
+        .filter(Boolean)
+    )
+  );
+
+  return ["All", ...uniqueConditions];
+}, [marketListings]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return marketListings.filter(
@@ -139,6 +152,11 @@ const cityOptions = useMemo(() => {
     ) &&
     (category === "All" || cat === category) &&
     (city === "All Pakistan" || listingCity === city)
+      &&
+(
+  conditionFilter === "All" ||
+  condition === conditionFilter
+)
 );
  }, [query, city, category, marketListings]);
 
@@ -196,7 +214,22 @@ const cityOptions = useMemo(() => {
     <option key={option} value={option}>
       {option}
     </option>
+  ))} <select
+  className="location"
+  value={conditionFilter}
+  onChange={(e) =>
+    setConditionFilter(e.target.value)
+  }
+  aria-label="Condition"
+>
+  {conditionOptions.map((option) => (
+    <option key={option} value={option}>
+      {option === "All"
+        ? "All Conditions"
+        : option}
+    </option>
   ))}
+</select>
 </select><button className="searchBtn" type="submit">Search</button></form><div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
@@ -226,7 +259,7 @@ const cityOptions = useMemo(() => {
   ))}
 </div></section>
 
-      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
+      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All");setConditionFilter("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
   {imageUrl ? (
     <img
       src={imageUrl}
