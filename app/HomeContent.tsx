@@ -16,12 +16,13 @@ type Listing = [
   string, // id
   string, // title
   string, // category
-  string, // price
+  string, // formatted price
   string, // city
   string, // condition
   string, // imageUrl
   string, // brand
-  string  // model
+  string, // model
+  number  // numericPrice
 ];
 
 
@@ -36,7 +37,8 @@ export default function HomeContent() {
   const [pendingContactId, setPendingContactId] = useState<string | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [conditionFilter, setConditionFilter] = useState("All");
-
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 useEffect(() => {
@@ -101,6 +103,7 @@ useEffect(() => {
   item.imageUrl,
   item.brand,
   item.model,
+  item.price,
 ])
       );
     })
@@ -131,34 +134,54 @@ const cityOptions = useMemo(() => {
   return ["All", ...uniqueConditions];
 }, [marketListings]);
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return marketListings.filter(
-  ([
-    ,
-    title,
-    cat,
-    ,
-    listingCity,
-    condition,
-    ,
-    brand,
-    model,
-  ]) =>
-    (
-      !q ||
-      `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`
-        .toLowerCase()
-        .includes(q)
-    ) &&
-    (category === "All" || cat === category) &&
-    (city === "All Pakistan" || listingCity === city)
-      &&
-(
-  conditionFilter === "All" ||
-  condition === conditionFilter
-)
-);
- }, [query, city, category, marketListings]);
+  const q = query.trim().toLowerCase();
+
+  const min = minPrice ? Number(minPrice) : null;
+  const max = maxPrice ? Number(maxPrice) : null;
+
+  return marketListings.filter(
+    ([
+      ,
+      title,
+      cat,
+      ,
+      listingCity,
+      condition,
+      ,
+      brand,
+      model,
+      numericPrice,
+    ]) =>
+      (
+        !q ||
+        `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`
+          .toLowerCase()
+          .includes(q)
+      ) &&
+      (category === "All" || cat === category) &&
+      (city === "All Pakistan" || listingCity === city) &&
+      (
+        conditionFilter === "All" ||
+        condition === conditionFilter
+      ) &&
+      (
+        min === null ||
+        numericPrice >= min
+      ) &&
+      (
+        max === null ||
+        numericPrice <= max
+      )
+  );
+}, [
+  query,
+  city,
+  category,
+  conditionFilter,
+  minPrice,
+  maxPrice,
+  marketListings,
+]);
 
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
@@ -204,7 +227,25 @@ const cityOptions = useMemo(() => {
   </button>
 </div></div></header>
 
-      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /></div><select
+      <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p><form className="searchBox" onSubmit={search}><div className="searchInput"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search equipment, brand or model..." aria-label="Search equipment" /> <input
+  className="location"
+  type="number"
+  min="0"
+  value={minPrice}
+  onChange={(e) => setMinPrice(e.target.value)}
+  placeholder="Min Price"
+  aria-label="Minimum price"
+/>
+
+<input
+  className="location"
+  type="number"
+  min="0"
+  value={maxPrice}
+  onChange={(e) => setMaxPrice(e.target.value)}
+  placeholder="Max Price"
+  aria-label="Maximum price"
+/> </div><select
   className="location"
   value={city}
   onChange={(e) => setCity(e.target.value)}
@@ -259,7 +300,19 @@ const cityOptions = useMemo(() => {
   ))}
 </div></section>
 
-      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All");setConditionFilter("All"); }}>Clear filters</button></div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
+      <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button
+  type="button"
+  onClick={() => {
+    setQuery("");
+    setCity("All Pakistan");
+    setCategory("All");
+    setConditionFilter("All");
+    setMinPrice("");
+    setMaxPrice("");
+  }}
+>
+  Clear filters
+</button> </div>{filtered.length > 0 ? <div className="listingGrid">{filtered.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
   {imageUrl ? (
     <img
       src={imageUrl}
@@ -270,7 +323,20 @@ const cityOptions = useMemo(() => {
     <div className="equipmentShape" />
   )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
   Contact Seller
-</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button className="primary" type="button" onClick={() => { setQuery(""); setCity("All Pakistan"); setCategory("All"); }}>Show all equipment</button></div>}</div></section>
+</button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button
+  className="primary"
+  type="button"
+  onClick={() => {
+    setQuery("");
+    setCity("All Pakistan");
+    setCategory("All");
+    setConditionFilter("All");
+    setMinPrice("");
+    setMaxPrice("");
+  }}
+>
+  Show all equipment
+</button></div>}</div></section>
 
       <section id="sellers" className="section container"><div className="sectionHead"><div><span className="eyebrow">TRUSTED NETWORK</span><h2>Verified Sellers</h2></div><button type="button" onClick={() => setAuthOpen(true)}>Join as a seller →</button></div><div className="sellerGrid">{["ABC Medical Equipment","MediTech Pakistan","HealthCare Solutions"].map((s,i)=><article className="seller" key={s}><div className="avatar">{s[0]}</div><div><h3>{s}</h3><p>✓ Verified Dealer · {["Karachi","Lahore","Islamabad"][i]}</p><small>{[124,86,61][i]} active listings · ★ 4.{8-i}</small></div><button type="button" onClick={() => { setCity(["Karachi","Lahore","Islamabad"][i]); search(); }}>View Listings</button></article>)}</div></section>
 
