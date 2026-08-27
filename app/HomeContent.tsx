@@ -5,8 +5,11 @@ import {
 } from "./auth";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  addFavorite,
   getCategories,
+  getFavoriteListingIds,
   getPublicListings,
+  removeFavorite,
   type CategoryOption,
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
@@ -77,6 +80,18 @@ useEffect(() => {
     .then(setCategoryOptions)
     .catch(() => setCategoryOptions([]));
 }, []);
+  useEffect(() => {
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    setFavorites([]);
+    return;
+  }
+
+  getFavoriteListingIds(session)
+    .then(setFavorites)
+    .catch(() => setFavorites([]));
+}, [isLoggedIn]);
   
   function contactSeller(id: string) {
     const session = getStoredSession();
@@ -203,11 +218,35 @@ const cityOptions = useMemo(() => {
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
   function chooseCategory(name: string) { setCategory(name); setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 20); }
-  function toggleFavorite(title: string) { setFavorites((items) =>
-  items.includes(title)
-    ? items.filter((item) => item !== title)
-    : [...items, title]
-); }
+  async function toggleFavorite(listingId: string) {
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    setAuthOpen(true);
+    return;
+  }
+
+  const isFavorite = favorites.includes(listingId);
+
+  try {
+    if (isFavorite) {
+      await removeFavorite(session, listingId);
+
+      setFavorites((items) =>
+        items.filter((id) => id !== listingId)
+      );
+    } else {
+      await addFavorite(session, listingId);
+
+      setFavorites((items) => [
+        ...items,
+        listingId,
+      ]);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
 
   return (
     <main>
@@ -407,7 +446,7 @@ const cityOptions = useMemo(() => {
     />
   ) : (
     <div className="equipmentShape" />
-  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(title)} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
+  )}<span className="badge">{condition}</span><button className="heart" type="button" onClick={() => toggleFavorite(id)}{favorites.includes(title) ? "♥" : "♡"} aria-label="Save listing">{favorites.includes(title) ? "♥" : "♡"}</button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
   Contact Seller
 </button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button
   className="primary"
