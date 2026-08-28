@@ -857,3 +857,18 @@
   font-size: 11px;
   font-weight: 700;
 }
+.listingExpiry {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #5f6f7a;
+}
+
+.listingExpiry.warning {
+  color: #a56a00;
+  font-weight: 700;
+}
+
+.listingExpiry.expired {
+  color: #b42318;
+  font-weight: 700;
+}
