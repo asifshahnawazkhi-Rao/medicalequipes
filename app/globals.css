@@ -858,8 +858,10 @@
   font-weight: 700;
 }
 .listingExpiry {
-  margin: 6px 0 0;
+  display: block;
+  margin: 10px 20px 4px;
   font-size: 13px;
+  line-height: 1.4;
   color: #5f6f7a;
 }
 
