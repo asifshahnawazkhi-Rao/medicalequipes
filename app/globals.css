@@ -873,3 +873,18 @@
   color: #b42318;
   font-weight: 700;
 }
+.listingAnalytics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5f6f7a;
+}
+
+.listingAnalytics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
