@@ -39,63 +39,37 @@ export default function Dashboard() {
   }, []);
 
   const counts = useMemo(() => {
-    return {
-      total: listings.length,
-      active: listings.filter(
-        (listing) => listing.status === "active"
-      ).length,
-      sold: listings.filter(
-        (listing) => listing.status === "sold"
-      ).length,
-      draft: listings.filter(
-  (listing) => listing.status === "draft"
-).length,
-    };
-  }, [listings]);
-{(() => {
-  const daysRemaining = getDaysRemaining(
-    listing.expiresAt
+  return {
+    total: listings.length,
+
+    active: listings.filter(
+      (listing) => listing.status === "active"
+    ).length,
+
+    sold: listings.filter(
+      (listing) => listing.status === "sold"
+    ).length,
+
+    draft: listings.filter(
+      (listing) => listing.status === "draft"
+    ).length,
+  };
+}, [listings]);
+
+const filteredListings = useMemo(() => {
+  if (filter === "all") {
+    return listings;
+  }
+
+  return listings.filter(
+    (listing) => listing.status === filter
   );
+}, [listings, filter]);
 
-  if (daysRemaining === null) return null;
-
-  if (daysRemaining <= 0) {
-    return (
-      <p className="listingExpiry expired">
-        Expired
-      </p>
-    );
-  }
-
-  if (daysRemaining <= 7) {
-    return (
-      <p className="listingExpiry warning">
-        Expires in {daysRemaining} day
-        {daysRemaining === 1 ? "" : "s"}
-      </p>
-    );
-  }
-
-  return (
-    <p className="listingExpiry">
-      {daysRemaining} days remaining
-    </p>
-  );
-})()}
-  const filteredListings = useMemo(() => {
-    if (filter === "all") {
-      return listings;
-    }
-
-    return listings.filter(
-      (listing) => listing.status === filter
-    );
-  }, [listings, filter]);
-
-  function logout() {
-    clearSession();
-    window.location.assign("/");
-  }
+function logout() {
+  clearSession();
+  window.location.assign("/");
+}
 function getDaysRemaining(expiresAt: string) {
   if (!expiresAt) return null;
 
