@@ -1144,6 +1144,25 @@ export async function recordListingView(
 ) {
   if (!listingId) return;
 
+  const storageKey = `medicalequipes-view-${listingId}`;
+  const now = Date.now();
+  const thirtyMinutes = 30 * 60 * 1000;
+
+  try {
+    const lastViewed = window.localStorage.getItem(
+      storageKey
+    );
+
+    if (
+      lastViewed &&
+      now - Number(lastViewed) < thirtyMinutes
+    ) {
+      return;
+    }
+  } catch {
+    // Continue recording if localStorage is unavailable.
+  }
+
   await supabaseFetch(
     "/rest/v1/listing_views",
     session,
@@ -1158,6 +1177,15 @@ export async function recordListingView(
       }),
     }
   );
+
+  try {
+    window.localStorage.setItem(
+      storageKey,
+      String(now)
+    );
+  } catch {
+    // View was recorded even if localStorage cannot be saved.
+  }
 }
 export async function getSellerListingAnalytics(
   session: AuthSession
