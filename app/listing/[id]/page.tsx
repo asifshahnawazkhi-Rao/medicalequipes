@@ -74,22 +74,34 @@ export default function ListingPage({
       setActiveImage(0);
 
       if (
-        data &&
-        recordedViewRef.current !== listingId
-      ) {
-        recordedViewRef.current = listingId;
+  data &&
+  recordedViewRef.current !== listingId
+) {
+  try {
+    await recordListingView(
+      listingId,
+      session ?? undefined
+    );
 
-        recordListingView(
-          listingId,
-          session ?? undefined
-        ).catch((error) => {
-          console.error(
-            "Could not record listing view:",
-            error
-          );
-        });
-      }
+    recordedViewRef.current = listingId;
 
+    console.log(
+      "Listing view recorded:",
+      listingId
+    );
+  } catch (error) {
+    console.error(
+      "VIEW RECORD ERROR:",
+      error
+    );
+
+    window.alert(
+      error instanceof Error
+        ? `View recording failed: ${error.message}`
+        : "View recording failed."
+    );
+  }
+}
       if (
         data?.sellerVisitingCardUrl &&
         session?.access_token
