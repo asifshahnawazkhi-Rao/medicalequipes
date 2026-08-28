@@ -61,7 +61,8 @@ export default function EditListingPage({
 
   const [newFiles, setNewFiles] =
     useState<File[]>([]);
-
+  const [newPreviews, setNewPreviews] =
+    useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -131,71 +132,124 @@ export default function EditListingPage({
   }, [listingId]);
 
   function chooseNewImages(
-    event: ChangeEvent<HTMLInputElement>
-  ) {
-    const selected =
-      event.target.files
-        ? Array.from(event.target.files)
-        : [];
+  event: ChangeEvent<HTMLInputElement>
+) {
+  const selected = event.target.files
+    ? Array.from(event.target.files)
+    : [];
 
-    if (!selected.length) return;
+  if (!selected.length) return;
 
-    setError("");
-    setMessage("");
+  setError("");
+  setMessage("");
 
-    const invalid = selected.find(
-      (file) =>
-        !allowedTypes.includes(file.type) ||
-        file.size > maxFileSize
-    );
+  const invalid = selected.find(
+    (file) =>
+      !allowedTypes.includes(file.type) ||
+      file.size > maxFileSize
+  );
 
-    if (invalid) {
-      event.target.value = "";
-
-      setError(
-        `${invalid.name} must be a JPG, PNG, or WebP image up to 5 MB.`
-      );
-
-      return;
-    }
-
-    const availableSlots =
-      maxFiles -
-      existingImages.length -
-      newFiles.length;
-
-    if (availableSlots <= 0) {
-      event.target.value = "";
-
-      setError(
-        `Maximum ${maxFiles} images are allowed.`
-      );
-
-      return;
-    }
-
-    const accepted =
-      selected.slice(0, availableSlots);
-
-    setNewFiles((current) => [
-      ...current,
-      ...accepted,
-    ]);
-
-    if (selected.length > availableSlots) {
-      setMessage(
-        `Only ${availableSlots} additional image(s) were added because the maximum is ${maxFiles}.`
-      );
-    }
-
+  if (invalid) {
     event.target.value = "";
+
+    setError(
+      `${invalid.name} must be a JPG, PNG, or WebP image up to 5 MB.`
+    );
+
+    return;
   }
 
-  function removeNewImage(index: number) {
-    setNewFiles((current) =>
-      current.filter((_, i) => i !== index)
+  const availableSlots =
+    maxFiles -
+    existingImages.length -
+    newFiles.length;
+
+  if (availableSlots <= 0) {
+    event.target.value = "";
+
+    setError(
+      `Maximum ${maxFiles} images are allowed.`
+    );
+
+    return;
+  }
+
+  const accepted =
+    selected.slice(0, availableSlots);
+
+  const previews = accepted.map((file) =>
+    URL.createObjectURL(file)
+  );
+
+  setNewFiles((current) => [
+    ...current,
+    ...accepted,
+  ]);
+
+  setNewPreviews((current) => [
+    ...current,
+    ...previews,
+  ]);
+
+  if (selected.length > availableSlots) {
+    setMessage(
+      `Only ${availableSlots} additional image(s) were added because the maximum is ${maxFiles}.`
     );
   }
+
+  event.target.value = "";
+}
+ function removeNewImage(index: number) {
+  setNewFiles((current) =>
+    current.filter((_, i) => i !== index)
+  );
+
+  setNewPreviews((current) => {
+    const previewToRemove = current[index];
+
+    if (previewToRemove) {
+      URL.revokeObjectURL(previewToRemove);
+    }
+
+    return current.filter((_, i) => i !== index);
+  });
+}
+  function moveNewImage(
+  index: number,
+  direction: "left" | "right"
+) {
+  const targetIndex =
+    direction === "left" ? index - 1 : index + 1;
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >= newFiles.length
+  ) {
+    return;
+  }
+
+  setNewFiles((current) => {
+    const reordered = [...current];
+
+    [reordered[index], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[index],
+    ];
+
+    return reordered;
+  });
+
+  setNewPreviews((current) => {
+    const reordered = [...current];
+
+    [reordered[index], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[index],
+    ];
+
+    return reordered;
+  });
+}
 async function moveExistingImage(
   index: number,
   direction: "left" | "right"
@@ -732,36 +786,72 @@ async function moveExistingImage(
             )}
 
             {newFiles.length > 0 && (
-              <>
-                <h3>New photos</h3>
+  <>
+    <h3>New photos</h3>
 
-                <div className="editNewImageList">
-                  {newFiles.map(
-                    (file, index) => (
-                      <div
-                        key={`${file.name}-${index}`}
-                      >
-                        <span>
-                          {file.name}
-                        </span>
+    <div className="editImageGrid">
+      {newFiles.map((file, index) => (
+        <div
+          className="editImageCard"
+          key={`${file.name}-${file.lastModified}-${index}`}
+        >
+          <div className="editImagePreview">
+            <img
+              src={newPreviews[index]}
+              alt={`New image ${index + 1}`}
+            />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeNewImage(
-                              index
-                            )
-                          }
-                          disabled={saving}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )
-                  )}
-                </div>
-              </>
-            )}
+            <span className="newImageBadge">
+              New
+            </span>
+
+            <span className="imagePositionBadge">
+              #{existingImages.length + index + 1}
+            </span>
+          </div>
+
+          <div className="editImageMoveActions">
+            <button
+              type="button"
+              onClick={() =>
+                moveNewImage(index, "left")
+              }
+              disabled={saving || index === 0}
+              title="Move image left"
+            >
+              ←
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                moveNewImage(index, "right")
+              }
+              disabled={
+                saving ||
+                index === newFiles.length - 1
+              }
+              title="Move image right"
+            >
+              →
+            </button>
+          </div>
+
+          <button
+            className="editImageRemove"
+            type="button"
+            onClick={() =>
+              removeNewImage(index)
+            }
+            disabled={saving}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  </>
+)}
 
             {existingImages.length +
               newFiles.length <
