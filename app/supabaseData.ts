@@ -1133,3 +1133,79 @@ export async function renewListing(
     }
   );
 }
+export type ListingAnalytics = {
+  listingId: string;
+  views: number;
+  favorites: number;
+};
+export async function recordListingView(
+  listingId: string,
+  session?: AuthSession
+) {
+  if (!listingId) return;
+
+  await supabaseFetch(
+    "/rest/v1/listing_views",
+    session,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        listing_id: listingId,
+        viewer_id: session?.user?.id ?? null,
+      }),
+    }
+  );
+}
+export async function getSellerListingAnalytics(
+  session: AuthSession
+): Promise<ListingAnalytics[]> {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const sellerListings = await supabaseFetch<
+    Array<{ id: string }>
+  >(
+    `/rest/v1/listings?select=id&seller_id=eq.${encodeURIComponent(
+      userId
+    )}`,
+    session
+  );
+
+  if (sellerListings.length === 0) {
+    return [];
+  }
+
+  const analytics = await Promise.all(
+    sellerListings.map(async (listing) => {
+      const listingId = listing.id;
+
+      const [views, favorites] = await Promise.all([
+        supabaseFetch<Array<{ id: string }>>(
+          `/rest/v1/listing_views?select=id&listing_id=eq.${encodeURIComponent(
+            listingId
+          )}`,
+          session
+        ),
+
+        supabaseFetch<Array<{ listing_id: string }>>(
+          `/rest/v1/favorites?select=listing_id&listing_id=eq.${encodeURIComponent(
+            listingId
+          )}`,
+          session
+        ),
+      ]);
+
+      return {
+        listingId,
+        views: views.length,
+        favorites: favorites.length,
+      };
+    })
+  );
+
+  return analytics;
+}
