@@ -13,6 +13,7 @@ import {
   deleteListingImage,
   getListingById,
   getListingImagesForEdit,
+  reorderListingImages,
   saveListingImages,
   updateListing,
   uploadListingImage,
@@ -195,7 +196,66 @@ export default function EditListingPage({
       current.filter((_, i) => i !== index)
     );
   }
+async function moveExistingImage(
+  index: number,
+  direction: "left" | "right"
+) {
+  const targetIndex =
+    direction === "left" ? index - 1 : index + 1;
 
+  if (
+    targetIndex < 0 ||
+    targetIndex >= existingImages.length
+  ) {
+    return;
+  }
+
+  const session = getStoredSession();
+
+  if (!session?.access_token || !listingId) {
+    window.location.replace("/");
+    return;
+  }
+
+  const reordered = [...existingImages];
+
+  [reordered[index], reordered[targetIndex]] = [
+    reordered[targetIndex],
+    reordered[index],
+  ];
+
+  // Update UI immediately.
+  setExistingImages(reordered);
+  setError("");
+  setMessage("Saving photo order...");
+
+  try {
+    await reorderListingImages(
+      session,
+      listingId,
+      reordered
+    );
+
+    setExistingImages(
+      reordered.map((image, imageIndex) => ({
+        ...image,
+        sortOrder: imageIndex,
+      }))
+    );
+
+    setMessage("Photo order updated.");
+  } catch (err) {
+    // Restore previous order if saving fails.
+    setExistingImages(existingImages);
+    setMessage("");
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Could not update photo order."
+    );
+  }
+}
   async function removeExistingImage(
     image: EditableListingImage
   ) {
@@ -605,32 +665,65 @@ export default function EditListingPage({
               <>
                 <h3>Current photos</h3>
 
-                <div className="editImageGrid">
-                  {existingImages.map(
-                    (image, index) => (
-                      <div
-                        className="editImageCard"
-                        key={image.id}
-                      >
-                        <img
-                          src={image.imageUrl}
-                          alt={`${listing.title} image ${
-                            index + 1
-                          }`}
-                        />
+                <div
+  className="editImageCard"
+  key={image.id}
+>
+  <div className="editImagePreview">
+    <img
+      src={image.imageUrl}
+      alt={`${listing.title} image ${index + 1}`}
+    />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeExistingImage(
-                              image
-                            )
-                          }
-                          disabled={saving}
-                        >
-                          Remove
-                        </button>
-                      </div>
+    {index === 0 && (
+      <span className="primaryImageBadge">
+        Primary
+      </span>
+    )}
+
+    <span className="imagePositionBadge">
+      #{index + 1}
+    </span>
+  </div>
+
+  <div className="editImageMoveActions">
+    <button
+      type="button"
+      onClick={() =>
+        moveExistingImage(index, "left")
+      }
+      disabled={saving || index === 0}
+      title="Move image left"
+    >
+      ←
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        moveExistingImage(index, "right")
+      }
+      disabled={
+        saving ||
+        index === existingImages.length - 1
+      }
+      title="Move image right"
+    >
+      →
+    </button>
+  </div>
+
+  <button
+    className="editImageRemove"
+    type="button"
+    onClick={() =>
+      removeExistingImage(image)
+    }
+    disabled={saving}
+  >
+    Remove
+  </button>
+</div>
                     )
                   )}
                 </div>
