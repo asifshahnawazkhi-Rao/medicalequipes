@@ -14,6 +14,7 @@ import {
   getListingById,
   recordListingView,
   getVisitingCardSignedUrl,
+  submitListingReport,
 } from "../../supabaseData";
 
 type ListingDetail = {
