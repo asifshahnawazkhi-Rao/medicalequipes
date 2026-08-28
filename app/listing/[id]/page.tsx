@@ -465,16 +465,35 @@ async function handleSubmitReport() {
 </section>
 
           <aside className="listingSafetyCard">
-            <span className="eyebrow">BUY SAFELY</span>
-            <h2>Marketplace safety</h2>
-            <p>
-              Verify equipment condition, serial numbers and service history
-              before making payment.
-            </p>
-            <p>
-              Meet in a suitable location and inspect equipment where practical.
-            </p>
-          </aside>
+  <span className="eyebrow">BUY SAFELY</span>
+
+  <h2>Marketplace safety</h2>
+
+  <p>
+    Verify equipment condition, serial numbers and service history
+    before making payment.
+  </p>
+
+  <p>
+    Meet in a suitable location and inspect equipment where practical.
+  </p>
+
+  <button
+    type="button"
+    className="reportListingButton"
+    onClick={() => {
+      if (!isLoggedIn) {
+        setAuthOpen(true);
+        return;
+      }
+
+      setReportOpen(true);
+      setReportMessage("");
+    }}
+  >
+    Report Listing
+  </button>
+</aside>
         </div>
       </div>
     <AuthModal
