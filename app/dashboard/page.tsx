@@ -15,6 +15,7 @@ type ListingFilter =
   | "active"
   | "sold"
   | "draft";
+  | "expired";
 
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
@@ -39,26 +40,68 @@ export default function Dashboard() {
   }, []);
 
   const counts = useMemo(() => {
+  const expired = listings.filter((listing) => {
+    const days = getDaysRemaining(listing.expiresAt);
+
+    return (
+      listing.status === "active" &&
+      days !== null &&
+      days <= 0
+    );
+  }).length;
+
+  const active = listings.filter((listing) => {
+    const days = getDaysRemaining(listing.expiresAt);
+
+    return (
+      listing.status === "active" &&
+      (days === null || days > 0)
+    );
+  }).length;
+
   return {
     total: listings.length,
-
-    active: listings.filter(
-      (listing) => listing.status === "active"
-    ).length,
-
+    active,
     sold: listings.filter(
       (listing) => listing.status === "sold"
     ).length,
-
     draft: listings.filter(
       (listing) => listing.status === "draft"
     ).length,
+    expired,
   };
 }, [listings]);
 
 const filteredListings = useMemo(() => {
   if (filter === "all") {
     return listings;
+  }
+
+  if (filter === "expired") {
+    return listings.filter((listing) => {
+      const days = getDaysRemaining(
+        listing.expiresAt
+      );
+
+      return (
+        listing.status === "active" &&
+        days !== null &&
+        days <= 0
+      );
+    });
+  }
+
+  if (filter === "active") {
+    return listings.filter((listing) => {
+      const days = getDaysRemaining(
+        listing.expiresAt
+      );
+
+      return (
+        listing.status === "active" &&
+        (days === null || days > 0)
+      );
+    });
   }
 
   return listings.filter(
@@ -279,10 +322,14 @@ function getDaysRemaining(expiresAt: string) {
                 <strong>{counts.sold}</strong>
               </div>
           
-<div className="dashboardStatCard">
-  <span>Inactive</span>
-  <strong>{counts.draft}</strong>
-</div>
+              <div className="dashboardStatCard">
+                <span>Inactive</span>
+                <strong>{counts.draft}</strong>
+              </div>
+              <div className="dashboardStatCard">
+                  <span>Expired</span>
+                  <strong>{counts.expired}</strong>
+              </div>
        </section>
             <div className="dashboardFilterTabs">
               <button
@@ -327,18 +374,25 @@ function getDaysRemaining(expiresAt: string) {
                 Sold ({counts.sold})
               </button>
               <button
-  type="button"
-  className={
-    filter === "draft"
-      ? "primary"
-      : ""
-  }
-  onClick={() =>
-    setFilter("draft")
-  }
->
-  Inactive ({counts.draft})
-</button>
+                type="button"
+                className={
+                filter === "draft"
+                ? "primary"
+                : ""
+                }
+                onClick={() =>
+                setFilter("draft")
+                        }
+              >
+              Inactive ({counts.draft})
+          </button>
+              <button
+                type="button"
+                className={filter === "expired" ? "active" : ""}
+                onClick={() => setFilter("expired")}
+                >
+              Expired ({counts.expired})
+          </button>
             </div>
           </>
         )}
