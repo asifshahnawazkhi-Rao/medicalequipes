@@ -69,50 +69,6 @@ export default function ListingPage({
   const session = getStoredSession();
 
   setIsLoggedIn(Boolean(session?.access_token));
-async function handleSubmitReport() {
-  const session = getStoredSession();
-
-  if (!session?.access_token) {
-    setAuthOpen(true);
-    return;
-  }
-
-  if (!listing) return;
-
-  if (!reportReason) {
-    setReportMessage("Please select a reason.");
-    return;
-  }
-
-  try {
-    setReportSubmitting(true);
-    setReportMessage("");
-
-    await submitListingReport(
-      session,
-      listing.id,
-      reportReason,
-      reportDescription
-    );
-
-    setReportMessage("Report submitted successfully.");
-    setReportReason("");
-    setReportDescription("");
-
-    setTimeout(() => {
-      setReportOpen(false);
-      setReportMessage("");
-    }, 1200);
-  } catch (error) {
-    setReportMessage(
-      error instanceof Error
-        ? error.message
-        : "Could not submit report."
-    );
-  } finally {
-    setReportSubmitting(false);
-  }
-}
   async function loadListing() {
     try {
       const data = await getListingById(
@@ -177,6 +133,52 @@ async function handleSubmitReport() {
 
   loadListing();
 }, [listingId]);
+
+  async function handleSubmitReport() {
+    const session = getStoredSession();
+
+    if (!session?.access_token) {
+      setAuthOpen(true);
+      return;
+    }
+
+    if (!listing) return;
+
+    if (!reportReason) {
+      setReportMessage("Please select a reason.");
+      return;
+    }
+
+    try {
+      setReportSubmitting(true);
+      setReportMessage("");
+
+      await submitListingReport(
+        session,
+        listing.id,
+        reportReason,
+        reportDescription
+      );
+
+      setReportMessage("Report submitted successfully.");
+      setReportReason("");
+      setReportDescription("");
+
+      setTimeout(() => {
+        setReportOpen(false);
+        setReportMessage("");
+      }, 1200);
+    } catch (error) {
+      setReportMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not submit report."
+      );
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
   const whatsappNumber = useMemo(() => {
     if (!listing?.contactPhone) return "";
 
@@ -482,6 +484,92 @@ async function handleSubmitReport() {
 </aside>
         </div>
       </div>
+      {reportOpen && (
+        <div
+          className="reportModalBackdrop"
+          onClick={() => setReportOpen(false)}
+        >
+          <div
+            className="reportModal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="reportModalHeader">
+              <div>
+                <span className="eyebrow">MARKETPLACE SAFETY</span>
+                <h2>Report Listing</h2>
+              </div>
+
+              <button
+                type="button"
+                className="reportModalClose"
+                onClick={() => setReportOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <p>Tell us why this listing should be reviewed.</p>
+
+            <label className="reportField">
+              <span>Reason</span>
+
+              <select
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value)}
+              >
+                <option value="">Select a reason</option>
+                <option value="misleading_information">
+                  Misleading information
+                </option>
+                <option value="suspected_fraud">Suspected fraud</option>
+                <option value="duplicate_listing">Duplicate listing</option>
+                <option value="wrong_category">Wrong category</option>
+                <option value="inappropriate_content">
+                  Inappropriate content
+                </option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+
+            <label className="reportField">
+              <span>Additional details</span>
+
+              <textarea
+                value={reportDescription}
+                onChange={(event) =>
+                  setReportDescription(event.target.value)
+                }
+                rows={5}
+                maxLength={1000}
+                placeholder="Optional details for the admin..."
+              />
+            </label>
+
+            {reportMessage && (
+              <p className="reportMessage">{reportMessage}</p>
+            )}
+
+            <div className="reportModalActions">
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                disabled={reportSubmitting}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="primary"
+                onClick={handleSubmitReport}
+                disabled={reportSubmitting}
+              >
+                {reportSubmitting ? "Submitting..." : "Submit Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     <AuthModal
   open={authOpen}
   onClose={() => setAuthOpen(false)}
