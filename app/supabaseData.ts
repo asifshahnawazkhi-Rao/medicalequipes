@@ -632,10 +632,12 @@ export type SellerListing = {
   condition: string;
   status: string;
   imageUrl: string;
+  expiresAt: string;
 };
 
 export async function getSellerListings(
   session: AuthSession
+  expiresAt: String(row.expires_at ?? ""),
 ): Promise<SellerListing[]> {
   requireUserSession(session);
 
@@ -1021,13 +1023,7 @@ export async function getPublicSellerById(
 export async function getPublicSellerListings(
   sellerId: string
 ): Promise<PublicListing[]> {
-  const rows = await supabaseFetch<
-    Array<Record<string, unknown>>
-  >(
-    `/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,categories(name),listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
-      sellerId
-    )}&status=eq.active&order=created_at.desc`
-  );
+  expiresAt: String(row.expires_at ?? ""),
 
   return rows.map((row) => {
     const category =
@@ -1087,4 +1083,32 @@ export async function reorderListingImages(
       }
     );
   }
+}
+export async function renewListing(
+  session: AuthSession,
+  listingId: string
+) {
+  requireUserSession(session);
+
+  const userId = session.user!.id;
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 60);
+
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(
+      listingId
+    )}&seller_id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        expires_at: expiresAt.toISOString(),
+        status: "active",
+      }),
+    }
+  );
 }
