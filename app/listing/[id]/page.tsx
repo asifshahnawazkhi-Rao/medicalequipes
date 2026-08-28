@@ -438,6 +438,13 @@ async function handleSubmitReport() {
       Login to view seller contact details.
     </p>
 
+    <button
+      type="button"
+      className="primary"
+      onClick={() => setAuthOpen(true)}
+    >
+      Login to Contact Seller
+    </button>
   </div>
 )}
 
@@ -500,3 +507,4 @@ async function handleSubmitReport() {
     </main>
   );
 }
+
