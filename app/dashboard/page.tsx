@@ -402,6 +402,36 @@ function getDaysRemaining(expiresAt: string) {
         ? "Sold"
         : listing.status}
 </span>
+                  {(() => {
+  const daysRemaining = getDaysRemaining(
+    listing.expiresAt
+  );
+
+  if (daysRemaining === null) return null;
+
+  if (daysRemaining <= 0) {
+    return (
+      <p className="listingExpiry expired">
+        Expired
+      </p>
+    );
+  }
+
+  if (daysRemaining <= 7) {
+    return (
+      <p className="listingExpiry warning">
+        Expires in {daysRemaining} day
+        {daysRemaining === 1 ? "" : "s"}
+      </p>
+    );
+  }
+
+  return (
+    <p className="listingExpiry">
+      {daysRemaining} days remaining
+    </p>
+  );
+})()}
                 </div>
 
                 <div className="dashboardListingBody">
