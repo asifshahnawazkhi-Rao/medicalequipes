@@ -1028,7 +1028,17 @@ export async function getPublicSellerById(
 export async function getPublicSellerListings(
   sellerId: string
 ): Promise<PublicListing[]> {
-  expiresAt: String(row.expires_at ?? ""),
+  const now = new Date().toISOString();
+
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listings?select=id,title,price,city,condition,brand,model,status,expires_at,categories(name),listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
+      sellerId
+    )}&status=eq.active&expires_at=gt.${encodeURIComponent(
+      now
+    )}&order=created_at.desc`
+  );
 
   return rows.map((row) => {
     const category =
