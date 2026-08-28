@@ -1237,3 +1237,40 @@ export async function getSellerListingAnalytics(
 
   return analytics;
 }
+export async function submitListingReport(
+  session: AuthSession,
+  listingId: string,
+  reason: string,
+  description: string
+) {
+  requireUserSession(session);
+
+  const reporterId = session.user!.id;
+
+  if (!listingId) {
+    throw new Error("Listing ID is required.");
+  }
+
+  if (!reason.trim()) {
+    throw new Error("Please select a report reason.");
+  }
+
+  await supabaseFetch(
+    "/rest/v1/reports",
+    session,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        reporter_id: reporterId,
+        target_type: "listing",
+        target_id: listingId,
+        reason: reason.trim(),
+        description: description.trim() || null,
+        status: "pending",
+      }),
+    }
+  );
+}
