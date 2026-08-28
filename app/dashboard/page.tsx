@@ -7,6 +7,7 @@ import {
   getSellerListings,
   updateListingStatus,
   type SellerListing,
+  renewListing,
 } from "../supabaseData";
 
 type ListingFilter =
@@ -51,7 +52,36 @@ export default function Dashboard() {
 ).length,
     };
   }, [listings]);
+{(() => {
+  const daysRemaining = getDaysRemaining(
+    listing.expiresAt
+  );
 
+  if (daysRemaining === null) return null;
+
+  if (daysRemaining <= 0) {
+    return (
+      <p className="listingExpiry expired">
+        Expired
+      </p>
+    );
+  }
+
+  if (daysRemaining <= 7) {
+    return (
+      <p className="listingExpiry warning">
+        Expires in {daysRemaining} day
+        {daysRemaining === 1 ? "" : "s"}
+      </p>
+    );
+  }
+
+  return (
+    <p className="listingExpiry">
+      {daysRemaining} days remaining
+    </p>
+  );
+})()}
   const filteredListings = useMemo(() => {
     if (filter === "all") {
       return listings;
@@ -66,7 +96,55 @@ export default function Dashboard() {
     clearSession();
     window.location.assign("/");
   }
+function getDaysRemaining(expiresAt: string) {
+  if (!expiresAt) return null;
 
+  const expiry = new Date(expiresAt).getTime();
+  const now = Date.now();
+
+  return Math.ceil(
+    (expiry - now) / (1000 * 60 * 60 * 24)
+  );
+}
+  async function handleRenew(listingId: string) {
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Renew this listing for another 60 days?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await renewListing(session, listingId);
+
+    const newExpiry = new Date();
+    newExpiry.setDate(newExpiry.getDate() + 60);
+
+    setListings((current) =>
+      current.map((listing) =>
+        listing.id === listingId
+          ? {
+              ...listing,
+              status: "active",
+              expiresAt: newExpiry.toISOString(),
+            }
+          : listing
+      )
+    );
+  } catch (error) {
+    window.alert(
+      error instanceof Error
+        ? error.message
+        : "Could not renew listing."
+    );
+  }
+}
   async function handleDelete(
     listingId: string,
     title: string
@@ -448,6 +526,15 @@ export default function Dashboard() {
     Reactivate
   </button>
 ) : null}
+                    {getDaysRemaining(listing.expiresAt) !== null &&
+  getDaysRemaining(listing.expiresAt)! <= 7 && (
+    <button
+      type="button"
+      onClick={() => handleRenew(listing.id)}
+    >
+      Renew Listing
+    </button>
+  )}
                   </div>
                 </div>
               </article>
