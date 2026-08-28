@@ -1063,3 +1063,28 @@ export async function getPublicSellerListings(
     };
   });
 }
+export async function reorderListingImages(
+  session: AuthSession,
+  listingId: string,
+  images: EditableListingImage[]
+) {
+  requireUserSession(session);
+
+  for (let index = 0; index < images.length; index++) {
+    await supabaseFetch(
+      `/rest/v1/listing_images?id=eq.${encodeURIComponent(
+        images[index].id
+      )}&listing_id=eq.${encodeURIComponent(listingId)}`,
+      session,
+      {
+        method: "PATCH",
+        headers: {
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          sort_order: index,
+        }),
+      }
+    );
+  }
+}
