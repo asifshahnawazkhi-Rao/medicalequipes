@@ -29,20 +29,34 @@ export default function Dashboard() {
 >([]);
 
   useEffect(() => {
-    const session = getStoredSession();
+  const session = getStoredSession();
 
-    if (!session?.access_token) {
-      window.location.replace("/");
-      return;
+  if (!session?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  setEmail(session.user?.email);
+
+  async function loadDashboard() {
+    try {
+      const [sellerListings, analyticsData] =
+        await Promise.all([
+          getSellerListings(session),
+          getSellerListingAnalytics(session),
+        ]);
+
+      setListings(sellerListings);
+      setAnalytics(analyticsData);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    setEmail(session.user?.email);
-
-    getSellerListings(session)
-      .then(setListings)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+  loadDashboard();
+}, []);
 
   const counts = useMemo(() => {
   const expired = listings.filter((listing) => {
@@ -516,11 +530,21 @@ function getAnalytics(listingId: string) {
                   </strong>
 
                   <p>
-                    {listing.condition} ·{" "}
-                    {listing.city}
-                  </p>
+  {listing.condition} ·{" "}
+  {listing.city}
+</p>
 
-                  <div className="dashboardListingActions">
+<div className="listingAnalytics">
+  <span>
+    👁 {getAnalytics(listing.id).views} Views
+  </span>
+
+  <span>
+    ♡ {getAnalytics(listing.id).favorites} Favorites
+  </span>
+</div>
+
+<div className="dashboardListingActions">
                     <a
                       href={`/listing/${listing.id}`}
                     >
