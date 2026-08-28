@@ -204,8 +204,14 @@ model: string;
 export async function getPublicListings(
   session?: AuthSession
 ): Promise<PublicListing[]> {
-  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    "/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,categories(name),listing_images(image_url,sort_order)&status=eq.active&order=created_at.desc",
+  const now = new Date().toISOString();
+
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,expires_at,categories(name),listing_images(image_url,sort_order)&status=eq.active&expires_at=gt.${encodeURIComponent(
+      now
+    )}&order=created_at.desc`,
     session
   );
 
@@ -227,7 +233,7 @@ export async function getPublicListings(
       : [];
 
     return {
-      id: String(row.id),
+      id: String(row.id ?? ""),
       title: String(row.title ?? ""),
       category: String(
         category?.name ?? "Medical Equipment"
