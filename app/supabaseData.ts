@@ -289,21 +289,154 @@ export async function uploadVisitingCard(
     path,
   };
 }
-export async function saveListingImages(session: AuthSession, listingId: string, images: ListingImageUpload[]) {
+export async function saveListingImages(
+  session: AuthSession,
+  listingId: string,
+  images: ListingImageUpload[],
+  startSortOrder = 0
+) {
   requireUserSession(session);
+
   if (!images.length) return;
-  const columns = await tableColumns(session, "listing_images");
+
+  const columns = await tableColumns(
+    session,
+    "listing_images"
+  );
+
   const rows = images.map((image, index) => {
     const row: Record<string, unknown> = {};
-    setExisting(row, columns, listingImageFields.listingId, listingId);
-    setExisting(row, columns, listingImageFields.url, image.publicUrl);
-    setExisting(row, columns, listingImageFields.path, image.path);
-    setExisting(row, columns, listingImageFields.sortOrder, index);
-    setExisting(row, columns, listingImageFields.altText, `Equipment image ${index + 1}`);
+
+    setExisting(
+      row,
+      columns,
+      listingImageFields.listingId,
+      listingId
+    );
+
+    setExisting(
+      row,
+      columns,
+      listingImageFields.url,
+      image.publicUrl
+    );
+
+    setExisting(
+      row,
+      columns,
+      listingImageFields.path,
+      image.path
+    );
+
+    setExisting(
+      row,
+      columns,
+      listingImageFields.sortOrder,
+      startSortOrder + index
+    );
+
+    setExisting(
+      row,
+      columns,
+      listingImageFields.altText,
+      `Equipment image ${
+        startSortOrder + index + 1
+      }`
+    );
+
     return row;
   });
 
-  await supabaseFetch('/rest/v1/listing_images', session, { method: "POST", body: JSON.stringify(rows) });
+  await supabaseFetch(
+    "/rest/v1/listing_images",
+    session,
+    {
+      method: "POST",
+      body: JSON.stringify(rows),
+    }
+  );
+}
+export type EditableListingImage = {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+};
+
+export async function getListingImagesForEdit(
+  session: AuthSession,
+  listingId: string
+): Promise<EditableListingImage[]> {
+  requireUserSession(session);
+
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listing_images?select=id,image_url,sort_order&listing_id=eq.${encodeURIComponent(
+      listingId
+    )}&order=sort_order.asc`,
+    session
+  );
+
+  return rows.map((row) => ({
+    id: String(row.id ?? ""),
+    imageUrl: String(row.image_url ?? ""),
+    sortOrder: Number(row.sort_order ?? 0),
+  }));
+}
+
+export async function deleteListingImage(
+  session: AuthSession,
+  listingId: string,
+  imageId: string,
+  imageUrl?: string
+) {
+  requireUserSession(session);
+
+  await supabaseFetch(
+    `/rest/v1/listing_images?id=eq.${encodeURIComponent(
+      imageId
+    )}&listing_id=eq.${encodeURIComponent(
+      listingId
+    )}`,
+    session,
+    {
+      method: "DELETE",
+      headers: {
+        Prefer: "return=minimal",
+      },
+    }
+  );
+
+  // Best-effort storage cleanup.
+  if (imageUrl) {
+    const marker =
+      "/storage/v1/object/public/listing-images/";
+
+    const markerIndex = imageUrl.indexOf(marker);
+
+    if (markerIndex >= 0) {
+      const path = imageUrl.slice(
+        markerIndex + marker.length
+      );
+
+      if (path) {
+        try {
+          await supabaseFetch(
+            `/storage/v1/object/listing-images/${path}`,
+            session,
+            {
+              method: "DELETE",
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Could not delete storage object:",
+            error
+          );
+        }
+      }
+    }
+  }
 }
 export async function getListingById(
   id: string,
