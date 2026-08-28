@@ -700,3 +700,15 @@
     grid-template-columns: 1fr;
   }
 }
+.dashboardListingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboardListingActions a,
+.dashboardListingActions button {
+  flex: 0 1 auto;
+  min-width: 92px;
+  box-sizing: border-box;
+}
