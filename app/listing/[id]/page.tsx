@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { getStoredSession } from "../../auth";
 import AuthModal from "../../AuthModal";
 
@@ -44,44 +49,72 @@ export default function ListingPage({
   const [activeImage, setActiveImage] = useState(0);
   const [sellerCardUrl, setSellerCardUrl] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-const [authOpen, setAuthOpen] = useState(false);
-
+  const [authOpen, setAuthOpen] = useState(false);
+  const recordedViewRef = useRef<string | null>(null);
+ 
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
   }, [params]);
 
   useEffect(() => {
-    if (!listingId) return;
+  if (!listingId) return;
 
-    const session = getStoredSession();
-    setIsLoggedIn(Boolean(session?.access_token));
+  const session = getStoredSession();
 
-    getListingById(listingId, session ?? undefined)
-  .then(async (data) => {
-    setListing(data);
-    setActiveImage(0);
+  setIsLoggedIn(Boolean(session?.access_token));
 
-    if (
-      data?.sellerVisitingCardUrl &&
-      session?.access_token
-    ) {
-      try {
-        const signedUrl =
-          await getVisitingCardSignedUrl(
-            session,
-            data.sellerVisitingCardUrl
+  async function loadListing() {
+    try {
+      const data = await getListingById(
+        listingId,
+        session ?? undefined
+      );
+
+      setListing(data);
+      setActiveImage(0);
+
+      if (
+        data &&
+        recordedViewRef.current !== listingId
+      ) {
+        recordedViewRef.current = listingId;
+
+        recordListingView(
+          listingId,
+          session ?? undefined
+        ).catch((error) => {
+          console.error(
+            "Could not record listing view:",
+            error
           );
-
-        setSellerCardUrl(signedUrl);
-      } catch (error) {
-        console.error(error);
+        });
       }
-    }
-  })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [listingId]);
 
+      if (
+        data?.sellerVisitingCardUrl &&
+        session?.access_token
+      ) {
+        try {
+          const signedUrl =
+            await getVisitingCardSignedUrl(
+              session,
+              data.sellerVisitingCardUrl
+            );
+
+          setSellerCardUrl(signedUrl);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadListing();
+}, [listingId]);
   const whatsappNumber = useMemo(() => {
     if (!listing?.contactPhone) return "";
 
