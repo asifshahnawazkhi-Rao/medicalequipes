@@ -437,28 +437,7 @@ async function handleSubmitReport() {
     <p>
       Login to view seller contact details.
     </p>
-<button
-  type="button"
-  className="reportListingButton"
-  onClick={() => {
-    if (!isLoggedIn) {
-      setAuthOpen(true);
-      return;
-    }
 
-    setReportOpen(true);
-    setReportMessage("");
-  }}
->
-  Report Listing
-</button>
-    <button
-      type="button"
-      className="primary"
-      onClick={() => setAuthOpen(true)}
-    >
-      Login to Contact Seller
-    </button>
   </div>
 )}
 
