@@ -36,14 +36,16 @@ export default function Dashboard() {
     return;
   }
 
-  setEmail(session.user?.email);
+  const validSession = session;
+
+  setEmail(validSession.user?.email);
 
   async function loadDashboard() {
     try {
       const [sellerListings, analyticsData] =
         await Promise.all([
-          getSellerListings(session),
-          getSellerListingAnalytics(session),
+          getSellerListings(validSession),
+          getSellerListingAnalytics(validSession),
         ]);
 
       setListings(sellerListings);
