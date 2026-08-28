@@ -77,17 +77,30 @@ export default function ListingPage({
   data &&
   recordedViewRef.current !== listingId
 ) {
-  recordedViewRef.current = listingId;
+  try {
+    await recordListingView(
+      listingId,
+      session ?? undefined
+    );
 
-  recordListingView(
-    listingId,
-    session ?? undefined
-  ).catch((error) => {
+    recordedViewRef.current = listingId;
+
+    console.log(
+      "Listing view recorded:",
+      listingId
+    );
+  } catch (error) {
     console.error(
-      "Could not record listing view:",
+      "VIEW RECORD ERROR:",
       error
     );
-  });
+
+    window.alert(
+      error instanceof Error
+        ? `View recording failed: ${error.message}`
+        : "View recording failed."
+    );
+  }
 }
       if (
         data?.sellerVisitingCardUrl &&
