@@ -92,7 +92,19 @@ export default function Dashboard() {
     expired,
   };
 }, [listings]);
-
+const engagementTotals = useMemo(() => {
+  return analytics.reduce(
+    (totals, item) => {
+      totals.views += item.views;
+      totals.favorites += item.favorites;
+      return totals;
+    },
+    {
+      views: 0,
+      favorites: 0,
+    }
+  );
+}, [analytics]);
 const filteredListings = useMemo(() => {
   if (filter === "all") {
     return listings;
@@ -363,6 +375,15 @@ function getAnalytics(listingId: string) {
                   <span>Expired</span>
                   <strong>{counts.expired}</strong>
               </div>
+              <div className="dashboardStatCard">
+  <span>Total Views</span>
+  <strong>{engagementTotals.views}</strong>
+</div>
+
+<div className="dashboardStatCard">
+  <span>Total Favorites</span>
+  <strong>{engagementTotals.favorites}</strong>
+</div>
        </section>
             <div className="dashboardFilterTabs">
               <button
