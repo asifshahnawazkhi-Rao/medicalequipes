@@ -449,15 +449,21 @@ const cityOptions = useMemo(() => {
   </button>
 </div>
         {filtered.length > 0 ? <div className="listingGrid">{sortedListings.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
-  {imageUrl ? (
-    <img
-      src={imageUrl}
-      alt={title}
-      className="listingPhoto"
-    />
-  ) : (
-    <div className="equipmentShape" />
-  )}<span className="badge">{condition}</span><button
+  <a
+    className="listingImageLink"
+    href={`/listing/${id}`}
+    aria-label={`View ${title}`}
+  >
+    {imageUrl ? (
+      <img
+        src={imageUrl}
+        alt={title}
+        className="listingPhoto"
+      />
+    ) : (
+      <div className="equipmentShape" />
+    )}
+  </a><span className="badge">{condition}</span><button
   className="heart"
   type="button"
   onClick={() => toggleFavorite(id)}
@@ -677,3 +683,4 @@ const cityOptions = useMemo(() => {
 </main>
 );
 }
+
