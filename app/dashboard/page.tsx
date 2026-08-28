@@ -8,6 +8,8 @@ import {
   updateListingStatus,
   type SellerListing,
   renewListing,
+  getSellerListingAnalytics,
+  ListingAnalytics,
 } from "../supabaseData";
 
 type ListingFilter =
@@ -22,6 +24,9 @@ export default function Dashboard() {
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ListingFilter>("all");
+  const [analytics, setAnalytics] = useState<
+  ListingAnalytics[]
+>([]);
 
   useEffect(() => {
     const session = getStoredSession();
@@ -118,11 +123,23 @@ function getDaysRemaining(expiresAt: string) {
 
   const expiry = new Date(expiresAt).getTime();
   const now = Date.now();
+  
 
   return Math.ceil(
     (expiry - now) / (1000 * 60 * 60 * 24)
   );
 }
+function getAnalytics(listingId: string) {
+  return (
+    analytics.find(
+      (item) => item.listingId === listingId
+    ) ?? {
+      listingId,
+      views: 0,
+      favorites: 0,
+    }
+  );
+}  
   async function handleRenew(listingId: string) {
   const session = getStoredSession();
 
