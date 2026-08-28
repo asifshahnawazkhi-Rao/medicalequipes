@@ -102,42 +102,49 @@ export default function Dashboard() {
   }
 
   async function handleStatusChange(
-    listingId: string,
-    nextStatus: "active" | "sold" | "draft"
-  ) {
-    const session = getStoredSession();
+  listingId: string,
+  nextStatus: "active" | "sold" | "draft"
+) {
+  if (nextStatus === "draft") {
+    const confirmed = window.confirm(
+      "Are you sure you want to deactivate this listing?\n\nIt will be hidden from the marketplace until you reactivate it."
+    );
 
-    if (!session?.access_token) {
-      window.location.replace("/");
-      return;
-    }
-
-    try {
-      await updateListingStatus(
-        listingId,
-        nextStatus,
-        session
-      );
-
-      setListings((current) =>
-        current.map((listing) =>
-          listing.id === listingId
-            ? {
-                ...listing,
-                status: nextStatus,
-              }
-            : listing
-        )
-      );
-    } catch (error) {
-      window.alert(
-        error instanceof Error
-          ? error.message
-          : "Could not update listing status."
-      );
-    }
+    if (!confirmed) return;
   }
 
+  const session = getStoredSession();
+
+  if (!session?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+
+  try {
+    await updateListingStatus(
+      listingId,
+      nextStatus,
+      session
+    );
+
+    setListings((current) =>
+      current.map((listing) =>
+        listing.id === listingId
+          ? {
+              ...listing,
+              status: nextStatus,
+            }
+          : listing
+      )
+    );
+  } catch (error) {
+    window.alert(
+      error instanceof Error
+        ? error.message
+        : "Could not update listing status."
+    );
+  }
+}
   return (
     <main className="sellerDashboardPage">
       <header className="header">
@@ -335,8 +342,14 @@ export default function Dashboard() {
                   )}
 
                   <span className="dashboardStatus">
-                    {listing.status}
-                  </span>
+  {listing.status === "draft"
+    ? "Inactive"
+    : listing.status === "active"
+      ? "Active"
+      : listing.status === "sold"
+        ? "Sold"
+        : listing.status}
+</span>
                 </div>
 
                 <div className="dashboardListingBody">
