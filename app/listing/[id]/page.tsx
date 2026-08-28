@@ -53,6 +53,11 @@ export default function ListingPage({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const recordedViewRef = useRef<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportMessage, setReportMessage] = useState("");
  
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -64,7 +69,50 @@ export default function ListingPage({
   const session = getStoredSession();
 
   setIsLoggedIn(Boolean(session?.access_token));
+async function handleSubmitReport() {
+  const session = getStoredSession();
 
+  if (!session?.access_token) {
+    setAuthOpen(true);
+    return;
+  }
+
+  if (!listing) return;
+
+  if (!reportReason) {
+    setReportMessage("Please select a reason.");
+    return;
+  }
+
+  try {
+    setReportSubmitting(true);
+    setReportMessage("");
+
+    await submitListingReport(
+      session,
+      listing.id,
+      reportReason,
+      reportDescription
+    );
+
+    setReportMessage("Report submitted successfully.");
+    setReportReason("");
+    setReportDescription("");
+
+    setTimeout(() => {
+      setReportOpen(false);
+      setReportMessage("");
+    }, 1200);
+  } catch (error) {
+    setReportMessage(
+      error instanceof Error
+        ? error.message
+        : "Could not submit report."
+    );
+  } finally {
+    setReportSubmitting(false);
+  }
+}
   async function loadListing() {
     try {
       const data = await getListingById(
@@ -389,7 +437,21 @@ export default function ListingPage({
     <p>
       Login to view seller contact details.
     </p>
+<button
+  type="button"
+  className="reportListingButton"
+  onClick={() => {
+    if (!isLoggedIn) {
+      setAuthOpen(true);
+      return;
+    }
 
+    setReportOpen(true);
+    setReportMessage("");
+  }}
+>
+  Report Listing
+</button>
     <button
       type="button"
       className="primary"
