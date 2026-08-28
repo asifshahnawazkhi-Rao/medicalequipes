@@ -6,6 +6,7 @@ import AuthModal from "../../AuthModal";
 
 import {
   getListingById,
+  recordListingView,
   getVisitingCardSignedUrl,
 } from "../../supabaseData";
 
