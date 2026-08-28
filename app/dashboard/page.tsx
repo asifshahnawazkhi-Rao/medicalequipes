@@ -14,7 +14,7 @@ type ListingFilter =
   | "all"
   | "active"
   | "sold"
-  | "draft";
+  | "draft"
   | "expired";
 
 export default function Dashboard() {
