@@ -665,68 +665,69 @@ async function moveExistingImage(
               <>
                 <h3>Current photos</h3>
 
-                <div
-  className="editImageCard"
-  key={image.id}
->
-  <div className="editImagePreview">
-    <img
-      src={image.imageUrl}
-      alt={`${listing.title} image ${index + 1}`}
-    />
-
-    {index === 0 && (
-      <span className="primaryImageBadge">
-        Primary
-      </span>
-    )}
-
-    <span className="imagePositionBadge">
-      #{index + 1}
-    </span>
-  </div>
-
-  <div className="editImageMoveActions">
-    <button
-      type="button"
-      onClick={() =>
-        moveExistingImage(index, "left")
-      }
-      disabled={saving || index === 0}
-      title="Move image left"
+<div className="editImageGrid">
+  {existingImages.map((image, index) => (
+    <div
+      className="editImageCard"
+      key={image.id}
     >
-      ←
-    </button>
+      <div className="editImagePreview">
+        <img
+          src={image.imageUrl}
+          alt={`${listing.title} image ${index + 1}`}
+        />
 
-    <button
-      type="button"
-      onClick={() =>
-        moveExistingImage(index, "right")
-      }
-      disabled={
-        saving ||
-        index === existingImages.length - 1
-      }
-      title="Move image right"
-    >
-      →
-    </button>
-  </div>
+        {index === 0 && (
+          <span className="primaryImageBadge">
+            Primary
+          </span>
+        )}
 
-  <button
-    className="editImageRemove"
-    type="button"
-    onClick={() =>
-      removeExistingImage(image)
-    }
-    disabled={saving}
-  >
-    Remove
-  </button>
+        <span className="imagePositionBadge">
+          #{index + 1}
+        </span>
+      </div>
+
+      <div className="editImageMoveActions">
+        <button
+          type="button"
+          onClick={() =>
+            moveExistingImage(index, "left")
+          }
+          disabled={saving || index === 0}
+          title="Move image left"
+        >
+          ←
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            moveExistingImage(index, "right")
+          }
+          disabled={
+            saving ||
+            index === existingImages.length - 1
+          }
+          title="Move image right"
+        >
+          →
+        </button>
+      </div>
+
+      <button
+        className="editImageRemove"
+        type="button"
+        onClick={() =>
+          removeExistingImage(image)
+        }
+        disabled={saving}
+      >
+        Remove
+      </button>
+    </div>
+  ))}
 </div>
-                    )
-                  )}
-                </div>
               </>
             )}
 
