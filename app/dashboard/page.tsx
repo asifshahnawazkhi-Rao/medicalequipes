@@ -402,7 +402,9 @@ function getDaysRemaining(expiresAt: string) {
         ? "Sold"
         : listing.status}
 </span>
-                  {(() => {
+                 
+                </div>
+ {(() => {
   const daysRemaining = getDaysRemaining(
     listing.expiresAt
   );
@@ -432,8 +434,6 @@ function getDaysRemaining(expiresAt: string) {
     </p>
   );
 })()}
-                </div>
-
                 <div className="dashboardListingBody">
                   <h2>{listing.title}</h2>
 
