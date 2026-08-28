@@ -637,14 +637,15 @@ export type SellerListing = {
 
 export async function getSellerListings(
   session: AuthSession
-  expiresAt: String(row.expires_at ?? ""),
 ): Promise<SellerListing[]> {
   requireUserSession(session);
 
   const userId = session.user!.id;
 
-  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-    `/rest/v1/listings?select=id,title,price,city,condition,status,listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
+  const rows = await supabaseFetch<
+    Array<Record<string, unknown>>
+  >(
+    `/rest/v1/listings?select=id,title,price,city,condition,status,expires_at,listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
       userId
     )}&order=created_at.desc`,
     session
@@ -657,18 +658,22 @@ export async function getSellerListings(
             image_url?: string;
             sort_order?: number;
           }>
+        ).sort(
+          (a, b) =>
+            (a.sort_order ?? 0) -
+            (b.sort_order ?? 0)
         )
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       : [];
 
     return {
-      id: String(row.id),
+      id: String(row.id ?? ""),
       title: String(row.title ?? ""),
       price: Number(row.price ?? 0),
       city: String(row.city ?? ""),
       condition: String(row.condition ?? ""),
       status: String(row.status ?? ""),
       imageUrl: String(images[0]?.image_url ?? ""),
+      expiresAt: String(row.expires_at ?? ""),
     };
   });
 }
