@@ -285,7 +285,7 @@ export default function ListingPage({
             <h1>{listing.title}</h1>
 
             <div className="listingPrice">
-              Rs. {listing.price.toLocaleString("en-PK")}
+              {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}
             </div>
 
             <p className="listingLocation">⌖ {listing.city}</p>

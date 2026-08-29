@@ -221,10 +221,9 @@ export default function SellerPage({
                   )}
 
                   <strong>
-                    Rs.{" "}
-                    {listing.price.toLocaleString(
-                      "en-PK"
-                    )}
+                    {listing.price > 0
+                      ? `Rs. ${listing.price.toLocaleString("en-PK")}`
+                      : "Ask for Price"}
                   </strong>
 
                   <p>⌖ {listing.city}</p>

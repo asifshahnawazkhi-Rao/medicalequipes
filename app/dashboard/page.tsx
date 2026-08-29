@@ -546,10 +546,9 @@ function getAnalytics(listingId: string) {
                   <h2>{listing.title}</h2>
 
                   <strong>
-                    Rs.{" "}
-                    {listing.price.toLocaleString(
-                      "en-PK"
-                    )}
+                    {listing.price > 0
+                      ? `Rs. ${listing.price.toLocaleString("en-PK")}`
+                      : "Ask for Price"}
                   </strong>
 
                   <p>

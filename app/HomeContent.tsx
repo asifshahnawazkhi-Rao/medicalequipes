@@ -118,7 +118,7 @@ useEffect(() => {
   item.id,
   item.title,
   item.category,
-  `Rs. ${item.price.toLocaleString("en-PK")}`,
+  item.price > 0 ? `Rs. ${item.price.toLocaleString("en-PK")}` : "Ask for Price",
   item.city,
   item.condition,
   item.imageUrl,

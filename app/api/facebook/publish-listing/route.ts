@@ -22,7 +22,9 @@ function facebookCaption(listing: ListingRow) {
     listing.model && `Model: ${listing.model}`,
     listing.condition && `Condition: ${listing.condition}`,
     listing.city && `Location: ${listing.city}`,
-    listing.price != null && `Price: PKR ${Number(listing.price).toLocaleString("en-PK")}`,
+    listing.price != null && (Number(listing.price) > 0
+      ? `Price: PKR ${Number(listing.price).toLocaleString("en-PK")}`
+      : "Price: Ask for Price"),
   ].filter(Boolean);
 
   return [

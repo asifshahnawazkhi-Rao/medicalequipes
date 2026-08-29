@@ -1868,3 +1868,25 @@
   }
 }
 
+
+.sellForm .priceRequestOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+  color: #087f8c;
+}
+
+.sellForm .priceRequestOption input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #087f8c;
+}
+
+.sellForm input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
