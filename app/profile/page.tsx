@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { getStoredSession } from "../auth";
+import ImageCropEditor from "../ImageCropEditor";
 import {
   getProfile,
   getVisitingCardSignedUrl,
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cardPickerOpen, setCardPickerOpen] = useState(false);
+  const [cardCropOpen, setCardCropOpen] = useState(false);
   const cardGalleryInputRef = useRef<HTMLInputElement>(null);
   const cardCameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -261,8 +263,9 @@ setMessage("Profile saved successfully.");
           </small>
 
           {visitingCardFile && (
-            <div className="authMessage">
-              Selected: {visitingCardFile.name}
+            <div className="profileSelectedCard">
+              <div className="authMessage">Selected: {visitingCardFile.name}</div>
+              <button type="button" className="photoEditButton" onClick={() => setCardCropOpen(true)}>Crop / Adjust</button>
             </div>
           )}
 
@@ -348,6 +351,17 @@ setMessage("Profile saved successfully.");
           </button>
         </form>
       </section>
+      {cardCropOpen && visitingCardFile && (
+        <ImageCropEditor
+          file={visitingCardFile}
+          title="Crop visiting card"
+          onClose={() => setCardCropOpen(false)}
+          onSave={(file) => {
+            setVisitingCardFile(file);
+            setCardCropOpen(false);
+          }}
+        />
+      )}
     </main>
   );
 }

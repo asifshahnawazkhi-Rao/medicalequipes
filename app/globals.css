@@ -1829,6 +1829,30 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.profileSelectedCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profileSelectedCard .authMessage {
+  flex: 1;
+  margin: 0;
+}
+
+.profileSelectedCard .photoEditButton {
+  border: 1px solid #9ed6d9;
+  border-radius: 8px;
+  background: #f8ffff;
+  padding: 10px 13px;
+  color: #087f8c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 @media (max-width: 700px) {
   .selectedPhotoGrid,
   .imageEditorControls {
