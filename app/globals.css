@@ -1890,3 +1890,8 @@
   background: #f1f5f9;
   color: #64748b;
 }
+
+.header .headerFacebookLink {
+  color: #1877f2;
+  font-weight: 800;
+}

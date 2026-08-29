@@ -262,7 +262,7 @@ const cityOptions = useMemo(() => {
 
   return (
     <main>
-      <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
+      <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a><a className="headerFacebookLink" href="https://www.facebook.com/profile.php?id=61594118333115" target="_blank" rel="noreferrer">Facebook</a></nav><div className="navActions">
   {isLoggedIn ? (
   <>
     <a className="headerUser" href="/profile" title={loggedInUser || "Logged in user"}>
