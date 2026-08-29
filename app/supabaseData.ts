@@ -612,6 +612,8 @@ export async function updateProfile(
     phone: values.phone,
     business_name: values.businessName,
     city: values.city,
+    role: "seller",
+    status: "approved",
   };
 
   if (typeof values.visitingCardUrl === "string") {

@@ -8,6 +8,7 @@ import {
   getCategories,
   getProfile,
   saveListingImages,
+  updateProfile,
   uploadListingImage,
   type CategoryOption,
 } from "../supabaseData";
@@ -114,17 +115,17 @@ const [sellerApproved, setSellerApproved] = useState(false);
         return;
       }
 
-      const approved =
-        profile.status.toLowerCase() === "approved";
-
-      setSellerApproved(approved);
-
-      if (!approved) {
-        setError(
-          "Your seller account is pending approval. You can publish equipment after admin approval."
-        );
-        return;
+      if (profile.status.toLowerCase() !== "approved" || profile.role.toLowerCase() !== "seller") {
+        await updateProfile(authenticatedSession, {
+          fullName: profile.fullName,
+          phone: profile.phone,
+          businessName: profile.businessName,
+          city: profile.city,
+          visitingCardUrl: profile.visitingCardUrl,
+        });
       }
+
+      setSellerApproved(true);
 
       setSession(authenticatedSession);
 
