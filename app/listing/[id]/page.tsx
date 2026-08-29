@@ -58,6 +58,7 @@ export default function ListingPage({
   const [reportDescription, setReportDescription] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
  
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -193,6 +194,30 @@ export default function ListingPage({
     );
   }, [listing]);
 
+  async function shareListing() {
+    if (!listing) return;
+
+    const shareData = {
+      title: listing.title,
+      text: `${listing.title} on MedicalEquipes`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareMessage("Shared");
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareMessage("Link copied");
+      }
+      window.setTimeout(() => setShareMessage(""), 1800);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      setShareMessage("Could not share");
+    }
+  }
+
   if (loading) {
     return (
       <main className="listingDetailPage">
@@ -228,6 +253,7 @@ export default function ListingPage({
             <a href="/#listings">Buy</a>
             <a href="/sell">Sell</a>
             <a href="/dashboard">Dashboard</a>
+            <a href="/favorites">Favorites</a>
           </nav>
         </div>
       </header>
@@ -282,7 +308,14 @@ export default function ListingPage({
               <span className="detailBadge">{listing.condition}</span>
             </div>
 
-            <h1>{listing.title}</h1>
+            <div className="listingTitleRow">
+              <h1>{listing.title}</h1>
+              <button className="listingShareButton" type="button" onClick={shareListing} aria-label="Share listing" title="Share listing">
+                <span aria-hidden="true">↗</span>
+                Share
+              </button>
+            </div>
+            {shareMessage && <small className="listingShareMessage" role="status">{shareMessage}</small>}
 
             <div className="listingPrice">
               {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}

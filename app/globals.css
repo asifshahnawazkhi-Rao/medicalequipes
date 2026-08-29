@@ -1894,9 +1894,19 @@
   color: #64748b;
 }
 
-.header .headerFacebookLink {
-  color: #1877f2;
+.header .headerFacebookIcon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1877f2;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 23px;
   font-weight: 800;
+  line-height: 1;
+  padding: 0;
 }
 
 .footerSocial {
@@ -1931,3 +1941,10 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(24, 119, 242, .35);
 }
+
+.listingTitleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.listingTitleRow h1 { margin-right: auto; }
+.listingShareButton { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid #b8d9dd; border-radius: 999px; background: #fff; color: #087f8c; padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.listingShareButton:hover { background: #e7f6f7; }
+.listingShareMessage { display: block; color: #087f8c; font-weight: 700; margin: -6px 0 12px; }
+@media (max-width: 600px) { .listingTitleRow { align-items: center; } .listingShareButton { padding: 8px 10px; } }
