@@ -674,6 +674,13 @@ const cityOptions = useMemo(() => {
       <a href="/about">About Us</a>
       <a href="/contact">Contact</a>
       <a href="/help">Help Center</a>
+      <a
+        href="https://www.facebook.com/profile.php?id=61594118333115"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Facebook Page
+      </a>
     </div>
 
     <div>
