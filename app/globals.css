@@ -1392,3 +1392,24 @@
   }
 }
 
+.hero {
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(231, 246, 247, .98) 0%,
+      rgba(231, 246, 247, .94) 38%,
+      rgba(231, 246, 247, .72) 63%,
+      rgba(231, 246, 247, .3) 100%
+    ),
+    url("/images/medical-imaging-hero.webp");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    background-position: 35% center;
+  }
+}
+
