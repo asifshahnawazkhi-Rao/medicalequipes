@@ -56,7 +56,7 @@ useEffect(() => {
     const session = getStoredSession();
 
     setIsLoggedIn(Boolean(session?.access_token));
-    setLoggedInUser(session?.user?.email ?? "");
+    setLoggedInUser(session?.user?.email ?? session?.user?.phone ?? "");
   }
 
   // Page load par check
@@ -702,7 +702,8 @@ const cityOptions = useMemo(() => {
   }}
   onLoginSuccess={() => {
     setIsLoggedIn(true);
-    setLoggedInUser(getStoredSession()?.user?.email ?? "");
+    const user = getStoredSession()?.user;
+    setLoggedInUser(user?.email ?? user?.phone ?? "");
 
     if (pendingContactId) {
       const id = pendingContactId;
