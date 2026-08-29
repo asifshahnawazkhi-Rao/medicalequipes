@@ -342,23 +342,23 @@ export default function ListingPage({
 
             <h1>{listing.title}</h1>
 
-            <div className="listingPrice">
-              {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}
+            <div className="listingPriceRow">
+              <div className="listingPrice">
+                {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}
+              </div>
+              <div className="listingIconActions">
+                <button className={isFavorite ? "listingIconButton favorite active" : "listingIconButton favorite"} type="button" onClick={toggleFavorite} disabled={favoriteBusy} aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"} title={isFavorite ? "Saved" : "Favorite"}>
+                  <span aria-hidden="true">{isFavorite ? "♥" : "♡"}</span>
+                </button>
+                <button className="listingIconButton share" type="button" onClick={shareListing} aria-label="Share listing" title="Share listing">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.3 10.9 7.4-4.5M8.3 13.1l7.4 4.5"/></svg>
+                </button>
+              </div>
             </div>
 
             <p className="listingLocation">⌖ {listing.city}</p>
 
-            <div className="listingDetailActions">
-              <button className={isFavorite ? "listingFavoriteButton active" : "listingFavoriteButton"} type="button" onClick={toggleFavorite} disabled={favoriteBusy}>
-                <span aria-hidden="true">{isFavorite ? "♥" : "♡"}</span>
-                {isFavorite ? "Saved" : "Favorite"}
-              </button>
-              <button className="listingShareButton" type="button" onClick={shareListing} aria-label="Share listing" title="Share listing">
-                <span aria-hidden="true">↗</span>
-                Share
-              </button>
-              {shareMessage && <small className="listingShareMessage" role="status">{shareMessage}</small>}
-            </div>
+            {shareMessage && <small className="listingShareMessage" role="status">{shareMessage}</small>}
 
             <div className="equipmentFacts">
               {listing.brand && (
