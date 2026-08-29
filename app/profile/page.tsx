@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { getStoredSession } from "../auth";
 import {
   getProfile,
@@ -26,6 +26,9 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cardPickerOpen, setCardPickerOpen] = useState(false);
+  const cardGalleryInputRef = useRef<HTMLInputElement>(null);
+  const cardCameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const session = getStoredSession();
@@ -245,17 +248,16 @@ setMessage("Profile saved successfully.");
             <input value={email} disabled />
           </label>
 
-          <label>
-            Visiting Card
-            <input
-              type="file"
-              accept="image/*"
-              onChange={chooseVisitingCard}
-            />
-          </label>
+          <label>Visiting Card</label>
+          <div className="photoPicker">
+            <button className="photoPickerButton" type="button" onClick={() => setCardPickerOpen((open) => !open)}>Choose File <span>▾</span></button>
+            {cardPickerOpen && <div className="photoPickerMenu"><button type="button" onClick={() => { setCardPickerOpen(false); cardCameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button><button type="button" onClick={() => { setCardPickerOpen(false); cardGalleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select an existing card image</small></button></div>}
+            <input ref={cardCameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={chooseVisitingCard} />
+            <input ref={cardGalleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" onChange={chooseVisitingCard} />
+          </div>
 
           <small>
-            Choose an image up to 5 MB. On mobile, the same button offers Camera and Gallery options.
+            Choose or take an image up to 5 MB.
           </small>
 
           {visitingCardFile && (
