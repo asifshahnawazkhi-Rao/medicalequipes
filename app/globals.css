@@ -832,7 +832,8 @@
   border: 0;
   background: #f7fafb;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .editImageMoveActions button:first-child {

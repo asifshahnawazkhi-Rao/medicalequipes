@@ -65,6 +65,7 @@ export default function EditListingPage({
     useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [priceOnRequest, setPriceOnRequest] = useState(false);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -109,6 +110,7 @@ export default function EditListingPage({
         }
 
         setListing(data);
+        setPriceOnRequest(data.price <= 0);
 
         const images =
           await getListingImagesForEdit(
@@ -401,6 +403,13 @@ async function moveExistingImage(
         form.entries()
       ) as Record<string, string>;
 
+    values.price = priceOnRequest ? "0" : values.price;
+
+    if (!priceOnRequest && Number(values.price) <= 0) {
+      setError("Price must be greater than zero, or select Ask for Price.");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
     setError("");
@@ -636,17 +645,25 @@ async function moveExistingImage(
               </label>
 
               <label>
-                Price (PKR) *
+                Price (PKR){!priceOnRequest && " *"}
                 <input
                   name="price"
                   type="number"
                   min="1"
                   step="1"
-                  required
-                  defaultValue={
-                    listing.price
-                  }
+                  required={!priceOnRequest}
+                  disabled={priceOnRequest}
+                  defaultValue={listing.price > 0 ? listing.price : ""}
+                  placeholder={priceOnRequest ? "Ask for Price" : "Enter price"}
                 />
+                <span className="priceRequestOption">
+                  <input
+                    type="checkbox"
+                    checked={priceOnRequest}
+                    onChange={(event) => setPriceOnRequest(event.target.checked)}
+                  />
+                  Ask for Price
+                </span>
               </label>
 
               <label>
@@ -709,7 +726,7 @@ async function moveExistingImage(
             <h2>Equipment photos</h2>
 
             <p className="helpText">
-              Keep, remove or add photos.
+              Keep, remove or add photos. Use Earlier/Later to change the 1, 2, 3 display sequence.
               Maximum {maxFiles} images.
               JPG, PNG or WebP. Maximum
               5 MB each.
@@ -751,7 +768,7 @@ async function moveExistingImage(
           disabled={saving || index === 0}
           title="Move image left"
         >
-          ←
+          ← Earlier
         </button>
 
         <button
@@ -765,7 +782,7 @@ async function moveExistingImage(
           }
           title="Move image right"
         >
-          →
+          Later →
         </button>
       </div>
 
