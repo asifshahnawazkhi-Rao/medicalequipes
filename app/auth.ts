@@ -6,7 +6,6 @@ export type AuthSession = {
   user?: {
     id: string;
     email?: string;
-    phone?: string;
   };
 };
 
@@ -65,45 +64,23 @@ async function authRequest<T>(
   return data as T;
 }
 
-function getAuthIdentity(identifier: string) {
-  const value = identifier.trim();
-
-  if (value.includes("@")) {
-    return { email: value.toLowerCase() };
-  }
-
-  const digits = value.replace(/\D/g, "");
-  const phone = digits.startsWith("92")
-    ? `+${digits}`
-    : digits.startsWith("0")
-      ? `+92${digits.slice(1)}`
-      : `+92${digits}`;
-
-  if (!/^\+923\d{9}$/.test(phone)) {
-    throw new Error("Enter a valid email or Pakistan mobile number.");
-  }
-
-  return { phone };
-}
-
 export function signInWithPassword(
-  identifier: string,
+  email: string,
   password: string
 ) {
   return authRequest<AuthSession>(
     "token?grant_type=password",
     {
-      ...getAuthIdentity(identifier),
+      email,
       password,
     }
   );
 }
 
 export function signUpWithPassword(
-  identifier: string,
+  email: string,
   password: string
 ) {
-  const identity = getAuthIdentity(identifier);
   const redirectTo =
     typeof window !== "undefined"
       ? `${window.location.origin}/dashboard`
@@ -112,13 +89,11 @@ export function signUpWithPassword(
   return authRequest<AuthSession>(
     "signup",
     {
-      ...identity,
+      email,
       password,
-      ...(identity.email ? {
-        options: {
-          email_redirect_to: redirectTo,
-        },
-      } : {}),
+      options: {
+        email_redirect_to: redirectTo,
+      },
     }
   );
 }

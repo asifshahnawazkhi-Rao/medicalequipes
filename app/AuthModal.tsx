@@ -17,7 +17,7 @@ export default function AuthModal({
   initialMode?: "login" | "signup";
 }) {
   const [mode, setMode] = useState<Mode>("login");
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,15 +38,12 @@ export default function AuthModal({
 
     try {
       if (mode === "forgot") {
-        if (!identifier.includes("@")) {
-          throw new Error("Password reset currently requires your email address.");
-        }
-        await sendPasswordReset(identifier);
+        await sendPasswordReset(email);
         setMessage("Password reset email sent. Please check your inbox.");
         return;
       }
 
-      const session = mode === "login" ? await signInWithPassword(identifier, password) : await signUpWithPassword(identifier, password);
+      const session = mode === "login" ? await signInWithPassword(email, password) : await signUpWithPassword(email, password);
 
     if (session.access_token) {
   saveSession(session);
@@ -68,9 +65,9 @@ export default function AuthModal({
       <div className="authModal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onMouseDown={(event) => event.stopPropagation()}>
         <button className="modalClose" type="button" onClick={onClose} aria-label="Close login modal">×</button>
         <h2 id="auth-title">{mode === "login" ? "Login" : mode === "signup" ? "Create account" : "Reset password"}</h2>
-        <p>{mode === "forgot" ? "Enter your email and we will send reset instructions." : mode === "signup" ? "Create your account with an email or WhatsApp number." : "Login with your email or WhatsApp number."}</p>
+        <p>{mode === "forgot" ? "Enter your email and we will send reset instructions." : mode === "signup" ? "Create your MedicalEquipes account with your email." : "Access your MedicalEquipes dashboard."}</p>
         <form className="authForm" onSubmit={submit}>
-          <label>{mode === "forgot" ? "Email" : "Email or WhatsApp number"}<input type={mode === "forgot" ? "email" : "text"} value={identifier} onChange={(event) => setIdentifier(event.target.value)} required autoComplete={mode === "forgot" ? "email" : "username"} inputMode={mode === "forgot" ? "email" : "text"} placeholder={mode === "forgot" ? "you@example.com" : "you@example.com or 03XX XXXXXXX"} /></label>
+          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" placeholder="you@example.com" /></label>
           {mode !== "forgot" && <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>}
           {message && <div className="authMessage" role="status">{message}</div>}
           <button className="primary authSubmit" type="submit" disabled={loading}>{loading ? "Please wait..." : mode === "login" ? "Login" : mode === "signup" ? "Sign up" : "Send reset email"}</button>
