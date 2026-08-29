@@ -324,11 +324,27 @@ if (!session || !sellerApproved) {
 
       setMessage("Saving image records...");
       await saveListingImages(session, listing.id, uploaded);
+
+      setMessage("Sharing listing on Facebook...");
+      const facebookResponse = await fetch("/api/facebook/publish-listing", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ listingId: listing.id }),
+      });
+      const facebookResult = await facebookResponse.json().catch(() => ({}));
+
       setProgress(100);
-      setMessage("Listing published successfully. Redirecting to your dashboard...");
+      setMessage(
+        facebookResponse.ok
+          ? "Listing published and shared on Facebook. Redirecting to your dashboard..."
+          : `Listing published successfully. Facebook sharing could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
+      );
       window.setTimeout(() => {
         window.location.assign(`/dashboard?created=${encodeURIComponent(listing.id)}`);
-      }, 1200);
+      }, facebookResponse.ok ? 1200 : 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create listing.");
       setMessage("");
