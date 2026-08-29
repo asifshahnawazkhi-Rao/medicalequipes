@@ -292,7 +292,7 @@ const cityOptions = useMemo(() => {
     </button>
   </>
 ) : (
-  <>
+  <div className="headerAuthButtons">
     <button
       type="button"
       className="headerLoginButton"
@@ -313,7 +313,7 @@ const cityOptions = useMemo(() => {
     >
       Sign Up
     </button>
-  </>
+  </div>
 )}
   <button className="primary" type="button" onClick={goToSell}>
     + Sell Equipment
