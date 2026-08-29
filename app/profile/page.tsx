@@ -78,17 +78,11 @@ export default function ProfilePage() {
     setError("");
     setMessage("");
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "application/pdf",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
+    if (!file.type.startsWith("image/")) {
       setVisitingCardFile(null);
       event.target.value = "";
       setError(
-        "Visiting card must be a JPG, PNG or PDF file."
+        "Visiting card must be an image file."
       );
       return;
     }
@@ -255,13 +249,13 @@ setMessage("Profile saved successfully.");
             Visiting Card
             <input
               type="file"
-              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+              accept="image/*"
               onChange={chooseVisitingCard}
             />
           </label>
 
           <small>
-            JPG, PNG or PDF. Maximum file size 5 MB.
+            Choose an image up to 5 MB. On mobile, the same button offers Camera and Gallery options.
           </small>
 
           {visitingCardFile && (
@@ -355,3 +349,4 @@ setMessage("Profile saved successfully.");
     </main>
   );
 }
+

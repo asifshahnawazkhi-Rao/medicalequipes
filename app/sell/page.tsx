@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredSession, type AuthSession } from "../auth";
 import {
   createListing,
@@ -45,7 +45,7 @@ function SelectedPhoto({
         <small>{(file.size / 1024 / 1024).toFixed(1)} MB</small>
       </div>
       <div className="selectedPhotoActions">
-        <button type="button" className="photoEditButton" onClick={onEdit}>Crop / Fix</button>
+        <button type="button" className="photoEditButton" onClick={onEdit}>Adjust Photo</button>
         <button type="button" onClick={onRemove}>Remove</button>
       </div>
     </article>
@@ -65,10 +65,15 @@ export default function SellEquipmentPage() {
 const [sellerApproved, setSellerApproved] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingPreview, setEditingPreview] = useState("");
-  const [editRotation, setEditRotation] = useState(0);
-  const [editZoom, setEditZoom] = useState(1);
-  const [editOffsetX, setEditOffsetX] = useState(0);
-  const [editOffsetY, setEditOffsetY] = useState(0);
+  const [crop, setCrop] = useState({ x: 8, y: 8, width: 84, height: 84 });
+  const cropDrag = useRef<{
+    mode: "move" | "nw" | "ne" | "sw" | "se";
+    startX: number;
+    startY: number;
+    initial: typeof crop;
+    width: number;
+    height: number;
+  } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
@@ -155,15 +160,68 @@ const [sellerApproved, setSellerApproved] = useState(false);
 
   function openImageEditor(index: number) {
     setEditingIndex(index);
-    setEditRotation(0);
-    setEditZoom(1);
-    setEditOffsetX(0);
-    setEditOffsetY(0);
+    setCrop({ x: 8, y: 8, width: 84, height: 84 });
   }
 
   function closeImageEditor() {
     if (editSaving) return;
     setEditingIndex(null);
+  }
+
+  function startCropDrag(
+    event: PointerEvent<HTMLElement>,
+    mode: "move" | "nw" | "ne" | "sw" | "se"
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    const stage = event.currentTarget.closest(".cropStage");
+    if (!(stage instanceof HTMLElement)) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    cropDrag.current = {
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      initial: crop,
+      width: stage.clientWidth,
+      height: stage.clientHeight,
+    };
+  }
+
+  function moveCrop(event: PointerEvent<HTMLElement>) {
+    const drag = cropDrag.current;
+    if (!drag) return;
+    const dx = ((event.clientX - drag.startX) / drag.width) * 100;
+    const dy = ((event.clientY - drag.startY) / drag.height) * 100;
+    const minimum = 12;
+    let { x, y, width, height } = drag.initial;
+
+    if (drag.mode === "move") {
+      x = Math.max(0, Math.min(100 - width, x + dx));
+      y = Math.max(0, Math.min(100 - height, y + dy));
+    } else {
+      if (drag.mode.includes("w")) {
+        const right = x + width;
+        x = Math.max(0, Math.min(right - minimum, x + dx));
+        width = right - x;
+      }
+      if (drag.mode.includes("e")) {
+        width = Math.max(minimum, Math.min(100 - x, width + dx));
+      }
+      if (drag.mode.includes("n")) {
+        const bottom = y + height;
+        y = Math.max(0, Math.min(bottom - minimum, y + dy));
+        height = bottom - y;
+      }
+      if (drag.mode.includes("s")) {
+        height = Math.max(minimum, Math.min(100 - y, height + dy));
+      }
+    }
+
+    setCrop({ x, y, width, height });
+  }
+
+  function stopCropDrag() {
+    cropDrag.current = null;
   }
 
   async function saveImageEdit() {
@@ -178,34 +236,26 @@ const [sellerApproved, setSellerApproved] = useState(false);
       await image.decode();
 
       const canvas = document.createElement("canvas");
-      canvas.width = 1200;
-      canvas.height = 900;
+      const sourceX = Math.round((crop.x / 100) * image.width);
+      const sourceY = Math.round((crop.y / 100) * image.height);
+      const sourceWidth = Math.max(1, Math.round((crop.width / 100) * image.width));
+      const sourceHeight = Math.max(1, Math.round((crop.height / 100) * image.height));
+      const outputScale = Math.min(1, 1600 / sourceWidth, 1600 / sourceHeight);
+      canvas.width = Math.max(1, Math.round(sourceWidth * outputScale));
+      canvas.height = Math.max(1, Math.round(sourceHeight * outputScale));
       const context = canvas.getContext("2d");
       if (!context) throw new Error("Image editor could not start.");
 
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      const radians = (editRotation * Math.PI) / 180;
-      const quarterTurn = Math.abs(editRotation % 180) === 90;
-      const rotatedWidth = quarterTurn ? image.height : image.width;
-      const rotatedHeight = quarterTurn ? image.width : image.height;
-      const scale = Math.max(
-        canvas.width / rotatedWidth,
-        canvas.height / rotatedHeight
-      ) * editZoom;
-
-      context.translate(
-        canvas.width / 2 + (editOffsetX / 100) * canvas.width * 0.22,
-        canvas.height / 2 + (editOffsetY / 100) * canvas.height * 0.22
-      );
-      context.rotate(radians);
       context.drawImage(
         image,
-        (-image.width * scale) / 2,
-        (-image.height * scale) / 2,
-        image.width * scale,
-        image.height * scale
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvas.width,
+        canvas.height
       );
 
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -354,7 +404,7 @@ if (!sellerApproved) {
       <section className="container sellFormWrap">
         <form className="sellForm" onSubmit={submit}>
           <div className="formSection"><h2>Equipment details</h2><div className="formGrid"><label>Equipment title *<input name="title" required placeholder="e.g. GE Voluson E10 Ultrasound" /></label><label>Category *<select name="categoryId" required><option value="">Select category</option>{categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Brand<input name="brand" placeholder="GE, Mindray, Dräger" /></label><label>Model<input name="model" placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR) *<input name="price" type="number" min="1" step="1" required placeholder="1250000" /></label><label>Location / city *<input name="city" required placeholder="Karachi" /></label><label>Contact name<input name="contactName" placeholder="Seller or business name" /></label><label>Contact email<input name="contactEmail" type="email" placeholder="sales@example.com" /></label><label>Contact phone<input name="contactPhone" placeholder="+92..." /></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
-          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Upload 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoInputGrid"><label>Choose photos<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => onFilesSelected(event.target.files)} /></label><label>Take a photo<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => onFilesSelected(event.target.files)} /></label></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
+          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Choose 1-{maxFiles} JPG, PNG, or WebP images. On mobile, the same button offers Camera and Gallery options. Each image must be 5MB or smaller.</p><label>Choose photos<input className="fileInput" type="file" accept="image/*" multiple onChange={(event) => onFilesSelected(event.target.files)} /></label>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
           {progress > 0 && <div className="progress"><span style={{ width: `${progress}%` }} /></div>}
           {message && <div className="authMessage" role="status">{message}</div>}
           {error && <div className="formError" role="alert">{error}</div>}
@@ -373,41 +423,39 @@ if (!sellerApproved) {
             <div className="imageEditorHeader">
               <div>
                 <span className="eyebrow">PHOTO EDITOR</span>
-                <h2 id="image-editor-title">Crop and fix image</h2>
+                <h2 id="image-editor-title">Adjust image</h2>
               </div>
               <button type="button" onClick={closeImageEditor} aria-label="Close image editor">×</button>
             </div>
 
             <div className="imageEditorViewport">
-              <img
-                src={editingPreview}
-                alt="Photo editing preview"
-                style={{
-                  transform: `translate(${editOffsetX * 0.22}%, ${editOffsetY * 0.22}%) rotate(${editRotation}deg) scale(${editZoom})`,
-                }}
-              />
-              <span>4:3 listing crop</span>
-            </div>
-
-            <div className="imageEditorControls">
-              <label>
-                Zoom
-                <input type="range" min="1" max="2.5" step="0.05" value={editZoom} onChange={(event) => setEditZoom(Number(event.target.value))} />
-              </label>
-              <label>
-                Move left / right
-                <input type="range" min="-100" max="100" step="1" value={editOffsetX} onChange={(event) => setEditOffsetX(Number(event.target.value))} />
-              </label>
-              <label>
-                Move up / down
-                <input type="range" min="-100" max="100" step="1" value={editOffsetY} onChange={(event) => setEditOffsetY(Number(event.target.value))} />
-              </label>
+              <div
+                className="cropStage"
+                onPointerMove={moveCrop}
+                onPointerUp={stopCropDrag}
+                onPointerCancel={stopCropDrag}
+              >
+                <img src={editingPreview} alt="Photo editing preview" />
+                <div className="cropShade" />
+                <div
+                  className="cropSelection"
+                  style={{ left: `${crop.x}%`, top: `${crop.y}%`, width: `${crop.width}%`, height: `${crop.height}%` }}
+                  onPointerDown={(event) => startCropDrag(event, "move")}
+                >
+                  <span className="cropGrid cropGridOne" />
+                  <span className="cropGrid cropGridTwo" />
+                  <button type="button" className="cropHandle nw" aria-label="Resize crop from top left" onPointerDown={(event) => startCropDrag(event, "nw")} />
+                  <button type="button" className="cropHandle ne" aria-label="Resize crop from top right" onPointerDown={(event) => startCropDrag(event, "ne")} />
+                  <button type="button" className="cropHandle sw" aria-label="Resize crop from bottom left" onPointerDown={(event) => startCropDrag(event, "sw")} />
+                  <button type="button" className="cropHandle se" aria-label="Resize crop from bottom right" onPointerDown={(event) => startCropDrag(event, "se")} />
+                </div>
+              </div>
+              <span>Drag the box or its corners to select the crop</span>
             </div>
 
             <div className="imageEditorToolbar">
-              <button type="button" onClick={() => setEditRotation((value) => value - 90)}>↶ Rotate left</button>
-              <button type="button" onClick={() => setEditRotation((value) => value + 90)}>Rotate right ↷</button>
-              <button type="button" onClick={() => { setEditRotation(0); setEditZoom(1); setEditOffsetX(0); setEditOffsetY(0); }}>Reset</button>
+              <button type="button" onClick={() => setCrop({ x: 0, y: 0, width: 100, height: 100 })}>Use full image</button>
+              <button type="button" onClick={() => setCrop({ x: 8, y: 8, width: 84, height: 84 })}>Reset crop</button>
             </div>
 
             <div className="imageEditorActions">

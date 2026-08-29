@@ -1001,6 +1001,119 @@
   }
 }
 
+.imageEditorViewport {
+  min-height: 260px;
+  aspect-ratio: auto;
+  padding: 12px;
+}
+
+.cropStage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.imageEditorViewport .cropStage > img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 55vh;
+  display: block;
+  object-fit: contain;
+  transform: none;
+}
+
+.cropShade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cropSelection {
+  position: absolute;
+  z-index: 2;
+  border: 2px solid #fff;
+  cursor: move;
+  box-shadow: 0 0 0 9999px #07171c99;
+  touch-action: none;
+}
+
+.cropSelection::before,
+.cropSelection::after,
+.cropGrid {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: #ffffff80;
+}
+
+.cropSelection::before,
+.cropSelection::after {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.cropSelection::before {
+  left: 33.333%;
+}
+
+.cropSelection::after {
+  right: 33.333%;
+}
+
+.cropGrid {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.cropGridOne {
+  top: 33.333%;
+}
+
+.cropGridTwo {
+  bottom: 33.333%;
+}
+
+.cropHandle {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #fff;
+  background: #087f8c;
+  border-radius: 50%;
+  box-shadow: 0 2px 7px #0f172a66;
+  touch-action: none;
+}
+
+.cropHandle.nw {
+  left: -12px;
+  top: -12px;
+  cursor: nwse-resize;
+}
+
+.cropHandle.ne {
+  right: -12px;
+  top: -12px;
+  cursor: nesw-resize;
+}
+
+.cropHandle.sw {
+  left: -12px;
+  bottom: -12px;
+  cursor: nesw-resize;
+}
+
+.cropHandle.se {
+  right: -12px;
+  bottom: -12px;
+  cursor: nwse-resize;
+}
+
 .footerGrid button {
   display: block;
   border: 0;
