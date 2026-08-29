@@ -34,6 +34,7 @@ type Listing = [
 
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("All Pakistan");
   const [category, setCategory] = useState("All");
@@ -291,13 +292,28 @@ const cityOptions = useMemo(() => {
     </button>
   </>
 ) : (
-  <button
-    type="button"
-    className="headerLoginButton"
-    onClick={() => setAuthOpen(true)}
-  >
-    Login
-  </button>
+  <>
+    <button
+      type="button"
+      className="headerLoginButton"
+      onClick={() => {
+        setAuthMode("login");
+        setAuthOpen(true);
+      }}
+    >
+      Login
+    </button>
+    <button
+      type="button"
+      className="headerSignupButton"
+      onClick={() => {
+        setAuthMode("signup");
+        setAuthOpen(true);
+      }}
+    >
+      Sign Up
+    </button>
+  </>
 )}
   <button className="primary" type="button" onClick={goToSell}>
     + Sell Equipment
@@ -679,7 +695,11 @@ const cityOptions = useMemo(() => {
 
 <AuthModal
   open={authOpen}
-  onClose={() => setAuthOpen(false)}
+  initialMode={authMode}
+  onClose={() => {
+    setAuthOpen(false);
+    setAuthMode("login");
+  }}
   onLoginSuccess={() => {
     setIsLoggedIn(true);
     setLoggedInUser(getStoredSession()?.user?.email ?? "");

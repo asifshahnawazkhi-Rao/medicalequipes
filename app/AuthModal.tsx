@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { saveSession, sendPasswordReset, signInWithPassword, signUpWithPassword } from "./auth";
 
 type Mode = "login" | "signup" | "forgot";
@@ -9,16 +9,25 @@ export default function AuthModal({
   open,
   onClose,
   onLoginSuccess,
+  initialMode = "login",
 }: {
   open: boolean;
   onClose: () => void;
   onLoginSuccess?: () => void;
+  initialMode?: "login" | "signup";
 }) {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setMode(initialMode);
+      setMessage("");
+    }
+  }, [initialMode, open]);
 
   if (!open) return null;
 
