@@ -689,7 +689,16 @@ const cityOptions = useMemo(() => {
   </div>
 
   <div className="container copyright">
-    © 2026 MedicalEquipes. All rights reserved.
+    <span>© 2026 MedicalEquipes. All rights reserved.</span>
+    <a
+      className="footerSuggestionLink"
+      href="https://wa.me/923392743271?text=Assalamualaikum%2C%20I%20have%20a%20suggestion%20for%20MedicalEquipes."
+      target="_blank"
+      rel="noreferrer"
+    >
+      <span aria-hidden="true">✦</span>
+      Suggestions? Message us on WhatsApp: 0339 2743271
+    </a>
   </div>
 </footer>
 
