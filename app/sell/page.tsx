@@ -18,6 +18,40 @@ const maxFileSize = 5 * 1024 * 1024;
 const maxFiles = 8;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
+function SelectedPhoto({
+  file,
+  index,
+  onEdit,
+  onRemove,
+}: {
+  file: File;
+  index: number;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return (
+    <article className="selectedPhoto">
+      {previewUrl && <img src={previewUrl} alt={`Selected equipment photo ${index + 1}`} />}
+      <div className="selectedPhotoInfo">
+        <span>{file.name}</span>
+        <small>{(file.size / 1024 / 1024).toFixed(1)} MB</small>
+      </div>
+      <div className="selectedPhotoActions">
+        <button type="button" className="photoEditButton" onClick={onEdit}>Crop / Fix</button>
+        <button type="button" onClick={onRemove}>Remove</button>
+      </div>
+    </article>
+  );
+}
+
 
 export default function SellEquipmentPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -29,6 +63,24 @@ export default function SellEquipmentPage() {
   const [progress, setProgress] = useState(0);
   const [checkingApproval, setCheckingApproval] = useState(true);
 const [sellerApproved, setSellerApproved] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingPreview, setEditingPreview] = useState("");
+  const [editRotation, setEditRotation] = useState(0);
+  const [editZoom, setEditZoom] = useState(1);
+  const [editOffsetX, setEditOffsetX] = useState(0);
+  const [editOffsetY, setEditOffsetY] = useState(0);
+  const [editSaving, setEditSaving] = useState(false);
+
+  useEffect(() => {
+    if (editingIndex === null || !files[editingIndex]) {
+      setEditingPreview("");
+      return;
+    }
+
+    const url = URL.createObjectURL(files[editingIndex]);
+    setEditingPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [editingIndex, files]);
 
   useEffect(() => {
   const stored = getStoredSession();
@@ -99,6 +151,87 @@ const [sellerApproved, setSellerApproved] = useState(false);
       return;
     }
     setFiles(next);
+  }
+
+  function openImageEditor(index: number) {
+    setEditingIndex(index);
+    setEditRotation(0);
+    setEditZoom(1);
+    setEditOffsetX(0);
+    setEditOffsetY(0);
+  }
+
+  function closeImageEditor() {
+    if (editSaving) return;
+    setEditingIndex(null);
+  }
+
+  async function saveImageEdit() {
+    if (editingIndex === null || !editingPreview) return;
+
+    try {
+      setEditSaving(true);
+      setError("");
+
+      const image = new Image();
+      image.src = editingPreview;
+      await image.decode();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 900;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Image editor could not start.");
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      const radians = (editRotation * Math.PI) / 180;
+      const quarterTurn = Math.abs(editRotation % 180) === 90;
+      const rotatedWidth = quarterTurn ? image.height : image.width;
+      const rotatedHeight = quarterTurn ? image.width : image.height;
+      const scale = Math.max(
+        canvas.width / rotatedWidth,
+        canvas.height / rotatedHeight
+      ) * editZoom;
+
+      context.translate(
+        canvas.width / 2 + (editOffsetX / 100) * canvas.width * 0.22,
+        canvas.height / 2 + (editOffsetY / 100) * canvas.height * 0.22
+      );
+      context.rotate(radians);
+      context.drawImage(
+        image,
+        (-image.width * scale) / 2,
+        (-image.height * scale) / 2,
+        image.width * scale,
+        image.height * scale
+      );
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => result ? resolve(result) : reject(new Error("Could not save edited image.")),
+          "image/jpeg",
+          0.9
+        );
+      });
+
+      const original = files[editingIndex];
+      const editedName = `${original.name.replace(/\.[^.]+$/, "")}-edited.jpg`;
+      const editedFile = new File([blob], editedName, {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+
+      setFiles((current) =>
+        current.map((file, index) => index === editingIndex ? editedFile : file)
+      );
+      setEditingIndex(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not edit image.");
+    } finally {
+      setEditSaving(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -221,13 +354,71 @@ if (!sellerApproved) {
       <section className="container sellFormWrap">
         <form className="sellForm" onSubmit={submit}>
           <div className="formSection"><h2>Equipment details</h2><div className="formGrid"><label>Equipment title *<input name="title" required placeholder="e.g. GE Voluson E10 Ultrasound" /></label><label>Category *<select name="categoryId" required><option value="">Select category</option>{categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Brand<input name="brand" placeholder="GE, Mindray, Dräger" /></label><label>Model<input name="model" placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR) *<input name="price" type="number" min="1" step="1" required placeholder="1250000" /></label><label>Location / city *<input name="city" required placeholder="Karachi" /></label><label>Contact name<input name="contactName" placeholder="Seller or business name" /></label><label>Contact email<input name="contactEmail" type="email" placeholder="sales@example.com" /></label><label>Contact phone<input name="contactPhone" placeholder="+92..." /></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
-          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Upload 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoInputGrid"><label>Choose photos<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => onFilesSelected(event.target.files)} /></label><label>Take a photo<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => onFilesSelected(event.target.files)} /></label></div>{files.length > 0 && <div className="imageList">{files.map((file, index) => <div key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" onClick={() => setFiles(files.filter((_, i) => i !== index))}>Remove</button></div>)}</div>}</div>
+          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Upload 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoInputGrid"><label>Choose photos<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => onFilesSelected(event.target.files)} /></label><label>Take a photo<input className="fileInput" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => onFilesSelected(event.target.files)} /></label></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
           {progress > 0 && <div className="progress"><span style={{ width: `${progress}%` }} /></div>}
           {message && <div className="authMessage" role="status">{message}</div>}
           {error && <div className="formError" role="alert">{error}</div>}
           <button className="primary submitListing" type="submit" disabled={loading}>{loading ? "Publishing listing..." : "+ Publish Equipment Listing"}</button>
         </form>
       </section>
+      {editingIndex !== null && editingPreview && (
+        <div className="imageEditorBackdrop" onMouseDown={closeImageEditor}>
+          <section
+            className="imageEditorModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="image-editor-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="imageEditorHeader">
+              <div>
+                <span className="eyebrow">PHOTO EDITOR</span>
+                <h2 id="image-editor-title">Crop and fix image</h2>
+              </div>
+              <button type="button" onClick={closeImageEditor} aria-label="Close image editor">×</button>
+            </div>
+
+            <div className="imageEditorViewport">
+              <img
+                src={editingPreview}
+                alt="Photo editing preview"
+                style={{
+                  transform: `translate(${editOffsetX * 0.22}%, ${editOffsetY * 0.22}%) rotate(${editRotation}deg) scale(${editZoom})`,
+                }}
+              />
+              <span>4:3 listing crop</span>
+            </div>
+
+            <div className="imageEditorControls">
+              <label>
+                Zoom
+                <input type="range" min="1" max="2.5" step="0.05" value={editZoom} onChange={(event) => setEditZoom(Number(event.target.value))} />
+              </label>
+              <label>
+                Move left / right
+                <input type="range" min="-100" max="100" step="1" value={editOffsetX} onChange={(event) => setEditOffsetX(Number(event.target.value))} />
+              </label>
+              <label>
+                Move up / down
+                <input type="range" min="-100" max="100" step="1" value={editOffsetY} onChange={(event) => setEditOffsetY(Number(event.target.value))} />
+              </label>
+            </div>
+
+            <div className="imageEditorToolbar">
+              <button type="button" onClick={() => setEditRotation((value) => value - 90)}>↶ Rotate left</button>
+              <button type="button" onClick={() => setEditRotation((value) => value + 90)}>Rotate right ↷</button>
+              <button type="button" onClick={() => { setEditRotation(0); setEditZoom(1); setEditOffsetX(0); setEditOffsetY(0); }}>Reset</button>
+            </div>
+
+            <div className="imageEditorActions">
+              <button type="button" onClick={closeImageEditor} disabled={editSaving}>Cancel</button>
+              <button type="button" className="primary" onClick={saveImageEdit} disabled={editSaving}>
+                {editSaving ? "Saving..." : "Save edited photo"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
