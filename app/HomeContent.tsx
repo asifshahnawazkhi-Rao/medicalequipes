@@ -674,13 +674,19 @@ const cityOptions = useMemo(() => {
       <a href="/about">About Us</a>
       <a href="/contact">Contact</a>
       <a href="/help">Help Center</a>
-      <a
-        href="https://www.facebook.com/profile.php?id=61594118333115"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Facebook Page
-      </a>
+      <div className="footerSocial">
+        <span>Follow Us</span>
+        <a
+          className="facebookSocialIcon"
+          href="https://www.facebook.com/profile.php?id=61594118333115"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Follow MedicalEquipes on Facebook"
+          title="Facebook"
+        >
+          f
+        </a>
+      </div>
     </div>
 
     <div>
