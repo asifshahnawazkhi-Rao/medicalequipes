@@ -45,6 +45,7 @@ export default function HomeContent() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
@@ -53,9 +54,8 @@ useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
 
-    setIsLoggedIn(
-      Boolean(session?.access_token)
-    );
+    setIsLoggedIn(Boolean(session?.access_token));
+    setLoggedInUser(session?.user?.email ?? "");
   }
 
   // Page load par check
@@ -264,6 +264,15 @@ const cityOptions = useMemo(() => {
       <header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
   {isLoggedIn ? (
   <>
+    <a className="headerUser" href="/profile" title={loggedInUser || "Logged in user"}>
+      <span className="headerUserAvatar">
+        {(loggedInUser || "U").charAt(0).toUpperCase()}
+      </span>
+      <span className="headerUserText">
+        <small>Signed in as</small>
+        <strong>{loggedInUser || "My Account"}</strong>
+      </span>
+    </a>
     <a href="/dashboard">Dashboard</a>
     <a href="/favorites">Favorites</a>
     <a href="/profile">Profile</a>
@@ -274,6 +283,7 @@ const cityOptions = useMemo(() => {
       onClick={() => {
         clearSession();
         setIsLoggedIn(false);
+        setLoggedInUser("");
         window.location.assign("/");
       }}
     >
@@ -379,7 +389,7 @@ const cityOptions = useMemo(() => {
     </select>
   </div>
 )}
-        <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="deviceScreen"><span>MEDICAL</span><b>EQUIPES</b><i>ECG / MONITOR</i></div><div className="deviceBase" /></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
+        <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term, i) => <span key={term}><button type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>{i < 4 ? ' · ' : ''}</span>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="monitorShell"><div className="deviceScreen monitorScreen"><div className="monitorTop"><span>ECG MONITOR</span><i>● LIVE</i></div><div className="monitorDisplay"><svg className="ecgWave" viewBox="0 0 560 120" role="img" aria-label="Live ECG waveform"><defs><pattern id="ecgGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.7" /></pattern></defs><rect width="560" height="120" fill="url(#ecgGrid)" /><polyline points="0,69 45,69 58,64 68,70 80,69 94,25 108,104 122,50 136,69 186,69 200,64 210,70 223,69 237,25 251,104 265,50 279,69 329,69 343,64 353,70 366,69 380,25 394,104 408,50 422,69 472,69 486,64 496,70 509,69 523,25 537,104 551,50 560,69" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="monitorVitals"><div><span>HR</span><b>78</b><small>BPM</small></div><div><span>SpO₂</span><b>98</b><small>%</small></div><div><span>NIBP</span><b>120/80</b><small>mmHg</small></div></div></div><div className="monitorBrand"><span>MEDICAL</span><strong>EQUIPES</strong></div></div><div className="monitorControls"><span /><span /><span /><span /><b /></div></div><div className="deviceStand"><span /><b /></div></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
@@ -672,6 +682,7 @@ const cityOptions = useMemo(() => {
   onClose={() => setAuthOpen(false)}
   onLoginSuccess={() => {
     setIsLoggedIn(true);
+    setLoggedInUser(getStoredSession()?.user?.email ?? "");
 
     if (pendingContactId) {
       const id = pendingContactId;
