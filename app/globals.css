@@ -22,6 +22,85 @@
   overflow: hidden;
 }
 
+.sellForm .priceRequestOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+  color: #087f8c;
+}
+
+.sellForm .priceRequestOption input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #087f8c;
+}
+
+.sellForm input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.header .headerFacebookIcon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1877f2;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+}
+
+.listingDetailActions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 14px 0 20px; }
+.listingShareButton { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid #b8d9dd; border-radius: 999px; background: #fff; color: #087f8c; padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.listingShareButton:hover { background: #e7f6f7; }
+.listingFavoriteButton { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #f1b7c1; border-radius: 999px; background: #fff; color: #be123c; padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.listingFavoriteButton.active { background: #fff1f2; border-color: #fb7185; }
+.listingFavoriteButton:disabled { opacity: .6; cursor: wait; }
+.listingShareMessage { color: #087f8c; font-weight: 700; }
+@media (max-width: 600px) { .listingShareButton, .listingFavoriteButton { padding: 8px 10px; } }
+
+.footerSocial {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.footerSocial > span {
+  color: #fff;
+  font-weight: 800;
+}
+
+.footerSocial .facebookSocialIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1877f2;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.footerSocial .facebookSocialIcon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(24, 119, 242, .35);
+}
+
 .listingImageLink {
   width: 100%;
   height: 100%;
@@ -74,6 +153,7 @@
 }
 
 .listingMainImageWrap {
+  position: relative;
   height: 520px;
   border-radius: 14px;
   overflow: hidden;
@@ -83,10 +163,10 @@
 }
 
 .listingDetailImage {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
 }
@@ -832,8 +912,7 @@
   border: 0;
   background: #f7fafb;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 18px;
 }
 
 .editImageMoveActions button:first-child {
@@ -1305,7 +1384,8 @@
 
 .helpCard h2,
 .contactCard h2 {
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .infoCallout {
@@ -1871,80 +1951,3 @@
   }
 }
 
-
-.sellForm .priceRequestOption {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-weight: 700;
-  color: #087f8c;
-}
-
-.sellForm .priceRequestOption input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  padding: 0;
-  accent-color: #087f8c;
-}
-
-.sellForm input:disabled {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.header .headerFacebookIcon {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #1877f2;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  font-size: 23px;
-  font-weight: 800;
-  line-height: 1;
-  padding: 0;
-}
-
-.footerSocial {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.footerSocial > span {
-  color: #fff;
-  font-weight: 800;
-}
-
-.footerSocial .facebookSocialIcon {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #1877f2;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
-  text-decoration: none;
-  transition: transform .2s ease, box-shadow .2s ease;
-}
-
-.footerSocial .facebookSocialIcon:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(24, 119, 242, .35);
-}
-
-.listingTitleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.listingTitleRow h1 { margin-right: auto; }
-.listingShareButton { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid #b8d9dd; border-radius: 999px; background: #fff; color: #087f8c; padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
-.listingShareButton:hover { background: #e7f6f7; }
-.listingShareMessage { display: block; color: #087f8c; font-weight: 700; margin: -6px 0 12px; }
-@media (max-width: 600px) { .listingTitleRow { align-items: center; } .listingShareButton { padding: 8px 10px; } }

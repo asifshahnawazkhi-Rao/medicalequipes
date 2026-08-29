@@ -15,6 +15,9 @@ import {
   recordListingView,
   getVisitingCardSignedUrl,
   submitListingReport,
+  getFavoriteListingIds,
+  addFavorite,
+  removeFavorite,
 } from "../../supabaseData";
 
 type ListingDetail = {
@@ -59,6 +62,8 @@ export default function ListingPage({
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [shareMessage, setShareMessage] = useState("");
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
  
   useEffect(() => {
     params.then(({ id }) => setListingId(id));
@@ -79,6 +84,11 @@ export default function ListingPage({
 
       setListing(data);
       setActiveImage(0);
+
+      if (session?.access_token) {
+        const favoriteIds = await getFavoriteListingIds(session);
+        setIsFavorite(favoriteIds.includes(listingId));
+      }
 
       if (
   data &&
@@ -218,6 +228,28 @@ export default function ListingPage({
     }
   }
 
+  async function toggleFavorite() {
+    const session = getStoredSession();
+    if (!session?.access_token) {
+      setAuthOpen(true);
+      return;
+    }
+    if (!listing || favoriteBusy) return;
+
+    try {
+      setFavoriteBusy(true);
+      if (isFavorite) {
+        await removeFavorite(session, listing.id);
+        setIsFavorite(false);
+      } else {
+        await addFavorite(session, listing.id);
+        setIsFavorite(true);
+      }
+    } finally {
+      setFavoriteBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <main className="listingDetailPage">
@@ -308,20 +340,25 @@ export default function ListingPage({
               <span className="detailBadge">{listing.condition}</span>
             </div>
 
-            <div className="listingTitleRow">
-              <h1>{listing.title}</h1>
-              <button className="listingShareButton" type="button" onClick={shareListing} aria-label="Share listing" title="Share listing">
-                <span aria-hidden="true">↗</span>
-                Share
-              </button>
-            </div>
-            {shareMessage && <small className="listingShareMessage" role="status">{shareMessage}</small>}
+            <h1>{listing.title}</h1>
 
             <div className="listingPrice">
               {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}
             </div>
 
             <p className="listingLocation">⌖ {listing.city}</p>
+
+            <div className="listingDetailActions">
+              <button className={isFavorite ? "listingFavoriteButton active" : "listingFavoriteButton"} type="button" onClick={toggleFavorite} disabled={favoriteBusy}>
+                <span aria-hidden="true">{isFavorite ? "♥" : "♡"}</span>
+                {isFavorite ? "Saved" : "Favorite"}
+              </button>
+              <button className="listingShareButton" type="button" onClick={shareListing} aria-label="Share listing" title="Share listing">
+                <span aria-hidden="true">↗</span>
+                Share
+              </button>
+              {shareMessage && <small className="listingShareMessage" role="status">{shareMessage}</small>}
+            </div>
 
             <div className="equipmentFacts">
               {listing.brand && (
