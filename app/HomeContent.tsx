@@ -645,18 +645,18 @@ const cityOptions = useMemo(() => {
 
     <div>
       <b>Company</b>
-      <a href="#top">About Us</a>
-      <a href="mailto:support@medicalequipes.com">Contact</a>
-      <a href="#top">Help Center</a>
+      <a href="/about">About Us</a>
+      <a href="/contact">Contact</a>
+      <a href="/help">Help Center</a>
     </div>
 
     <div>
       <b>Account</b>
-      <button onClick={() => setAuthOpen(true)}>
+      <button type="button" onClick={() => setAuthOpen(true)}>
         Login / Register
       </button>
 
-      <button onClick={goToSell}>
+      <button type="button" onClick={goToSell}>
         Sell Equipment
       </button>
     </div>

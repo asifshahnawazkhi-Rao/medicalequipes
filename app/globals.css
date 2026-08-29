@@ -1001,3 +1001,185 @@
   }
 }
 
+.footerGrid button {
+  display: block;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 9px 0;
+  color: #9eb3b7;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.footerGrid a:hover,
+.footerGrid button:hover {
+  color: #fff;
+}
+
+.infoPage {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.infoHero {
+  padding: 76px 0;
+  background: #e7f6f7;
+  border-bottom: 1px solid #dbe7e9;
+}
+
+.infoHeroInner {
+  max-width: 780px;
+}
+
+.infoHero h1 {
+  margin: 12px 0 18px;
+  font-size: clamp(38px, 6vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  color: #102b33;
+}
+
+.infoHero p,
+.infoIntro p,
+.infoCard p,
+.contactCard p,
+.helpCard p,
+.infoCallout p {
+  color: #526277;
+  line-height: 1.7;
+}
+
+.infoHero p {
+  max-width: 680px;
+  font-size: 17px;
+}
+
+.infoContent {
+  padding-top: 64px;
+  padding-bottom: 80px;
+}
+
+.infoIntro {
+  max-width: 760px;
+  margin-bottom: 34px;
+}
+
+.infoIntro h2,
+.infoCallout h2 {
+  margin: 6px 0 10px;
+  font-size: 30px;
+  letter-spacing: -.03em;
+}
+
+.infoCardGrid,
+.helpGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.infoCard,
+.helpCard,
+.contactCard {
+  padding: 26px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 14px 40px #164e630a;
+}
+
+.infoCard > span {
+  color: #087f8c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.infoCard h3,
+.helpCard h2,
+.contactCard h2 {
+  margin: 12px 0 8px;
+  color: #172033;
+}
+
+.helpCard h2,
+.contactCard h2 {
+  font-size: 18px;
+}
+
+.infoCallout {
+  margin-top: 36px;
+  padding: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #dbe7e9;
+}
+
+.infoCallout > div {
+  max-width: 760px;
+}
+
+.infoCallout p {
+  margin-bottom: 0;
+}
+
+.infoAction {
+  flex: 0 0 auto;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.contactCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.contactIcon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #e7f6f7;
+  color: #087f8c;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.contactCard h2 {
+  margin-top: 2px;
+}
+
+.contactCard a {
+  color: #087f8c;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .infoHero {
+    padding: 54px 0;
+  }
+
+  .infoCardGrid,
+  .helpGrid,
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .infoCallout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
