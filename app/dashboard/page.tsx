@@ -203,6 +203,7 @@ function getAnalytics(listingId: string) {
           : listing
       )
     );
+
   } catch (error) {
     window.alert(
       error instanceof Error
@@ -281,6 +282,10 @@ function getAnalytics(listingId: string) {
           : listing
       )
     );
+
+    if (nextStatus === "out_of_stock") {
+      setFilter("out_of_stock");
+    }
   } catch (error) {
     window.alert(
       error instanceof Error
