@@ -50,6 +50,27 @@ async function graphPost(path: string, values: Record<string, string>) {
   return data;
 }
 
+async function resolvePageAccessToken(pageId: string, storedToken: string) {
+  const url = new URL("https://graph.facebook.com/v26.0/me/accounts");
+  url.searchParams.set("fields", "id,name,access_token");
+  url.searchParams.set("limit", "100");
+  url.searchParams.set("access_token", storedToken);
+
+  const response = await fetch(url, { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !Array.isArray(data?.data)) {
+    return storedToken;
+  }
+
+  const page = data.data.find(
+    (item: { id?: string; access_token?: string }) =>
+      String(item.id ?? "") === pageId && item.access_token
+  );
+
+  return page?.access_token || storedToken;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -83,12 +104,16 @@ export async function POST(request: NextRequest) {
     }
 
     const caption = facebookCaption(listing);
+    const resolvedPageToken = await resolvePageAccessToken(
+      pageId,
+      pageAccessToken
+    );
     const imageUrl = [...(listing.listing_images || [])]
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))[0]?.image_url;
 
     const result = imageUrl
-      ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: pageAccessToken })
-      : await graphPost(`${pageId}/feed`, { message: caption, access_token: pageAccessToken });
+      ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: resolvedPageToken })
+      : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
 
     return NextResponse.json({ ok: true, postId: result.post_id || result.id });
   } catch (error) {
