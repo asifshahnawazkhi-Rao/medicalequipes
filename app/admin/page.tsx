@@ -8,7 +8,7 @@ import {
   updateSellerApproval, type AdminListing, type AdminReport, type AdminSellerProfile,
 } from "../supabaseData";
 
-type Section = "overview" | "sellers" | "listings" | "reports";
+type Section = "overview" | "sellers" | "listings" | "reports" | "backups";
 type SellerWithCard = AdminSellerProfile & { cardUrl?: string };
 
 export default function AdminPage() {
@@ -90,6 +90,29 @@ export default function AdminPage() {
   }
   function logout() { clearSession(); window.location.assign("/"); }
 
+  function downloadMarketplaceBackup() {
+    const createdAt = new Date();
+    const safeSellers = sellers.map(({ cardUrl: _cardUrl, ...seller }) => seller);
+    const backup = {
+      backupFormat: "medicalequipes-marketplace-v1",
+      website: "https://www.medicalequipes.com",
+      createdAt: createdAt.toISOString(),
+      summary: { sellers: safeSellers.length, listings: listings.length, reports: reports.length },
+      data: { sellers: safeSellers, listings, reports },
+      excludedForSecurity: ["Passwords and authentication sessions", "Supabase secret keys", "Facebook access tokens", "Temporary signed visiting-card links"],
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `medicalequipes-backup-${createdAt.toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setMessage("Marketplace backup downloaded successfully.");
+  }
+
   if (loading) return <main className="dashboardPage">Loading admin dashboard...</main>;
 
   const filters = (items: string[], current: string, change: (value: string) => void) => (
@@ -100,10 +123,12 @@ export default function AdminPage() {
     <header className="header"><div className="container nav"><a className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="/">Marketplace</a><a href="/dashboard">Seller Dashboard</a><a href="/profile">Profile</a></nav><button className="adminLogout" type="button" onClick={logout}>Logout</button></div></header>
     <div className="container adminDashboardContainer">
       <section className="adminHero"><div><span className="eyebrow">ADMIN CONTROL CENTER</span><h1>Marketplace Administration</h1><p>Manage sellers, listings and marketplace safety from one place.</p></div><div className="adminHeroBadge">Secure Admin Area</div></section>
-      <nav className="adminTabs">{(["overview", "sellers", "listings", "reports"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} type="button" onClick={() => { setSection(item); setSearch(""); }}>{item === "reports" && stats.pendingReports ? `Reports (${stats.pendingReports})` : item}</button>)}</nav>
+      <nav className="adminTabs">{(["overview", "sellers", "listings", "reports", "backups"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} type="button" onClick={() => { setSection(item); setSearch(""); }}>{item === "reports" && stats.pendingReports ? `Reports (${stats.pendingReports})` : item}</button>)}</nav>
       {message && <div className="authMessage adminMessage">{message}</div>}{error && <div className="formError adminMessage">{error}</div>}
 
-      {section === "overview" && <><section className="adminStats"><div><span>Total Sellers</span><strong>{stats.sellers}</strong></div><div><span>Pending Sellers</span><strong>{stats.pendingSellers}</strong></div><div><span>Total Listings</span><strong>{stats.listings}</strong></div><div><span>Active Listings</span><strong>{stats.activeListings}</strong></div><div><span>Pending Reports</span><strong>{stats.pendingReports}</strong></div><div><span>Resolved Reports</span><strong>{stats.resolvedReports}</strong></div></section><section className="adminQuickGrid"><button onClick={() => setSection("sellers")}><span>Seller Approvals</span><strong>{stats.pendingSellers} pending</strong><small>Review profiles and verification cards.</small></button><button onClick={() => setSection("listings")}><span>Listing Control</span><strong>{stats.listings} listings</strong><small>Control listing availability and status.</small></button><button onClick={() => setSection("reports")}><span>Safety Reports</span><strong>{stats.pendingReports} pending</strong><small>Review reports submitted by users.</small></button></section></>}
+      {section === "overview" && <><section className="adminStats"><div><span>Total Sellers</span><strong>{stats.sellers}</strong></div><div><span>Pending Sellers</span><strong>{stats.pendingSellers}</strong></div><div><span>Total Listings</span><strong>{stats.listings}</strong></div><div><span>Active Listings</span><strong>{stats.activeListings}</strong></div><div><span>Pending Reports</span><strong>{stats.pendingReports}</strong></div><div><span>Resolved Reports</span><strong>{stats.resolvedReports}</strong></div></section><section className="adminQuickGrid"><button onClick={() => setSection("sellers")}><span>Seller Approvals</span><strong>{stats.pendingSellers} pending</strong><small>Review profiles and verification cards.</small></button><button onClick={() => setSection("listings")}><span>Listing Control</span><strong>{stats.listings} listings</strong><small>Control listing availability and status.</small></button><button onClick={() => setSection("reports")}><span>Safety Reports</span><strong>{stats.pendingReports} pending</strong><small>Review reports submitted by users.</small></button><button onClick={() => setSection("backups")}><span>Backup My Data</span><strong>Secure export</strong><small>Download a copy of marketplace development data.</small></button></section></>}
+
+      {section === "backups" && <section className="adminPanel adminBackupPanel"><div className="adminPanelHead"><div><h2>Backup My Data</h2><p>Download a dated copy of the MedicalEquipes marketplace data.</p></div></div><div className="adminBackupGrid"><article><span className="adminBackupIcon">↓</span><div><h3>Marketplace Data Backup</h3><p>Includes seller profiles, equipment listings, statuses and safety reports currently visible to the admin account.</p><ul><li>{stats.sellers} seller records</li><li>{stats.listings} listing records</li><li>{reports.length} report records</li></ul><button type="button" onClick={downloadMarketplaceBackup}>Download JSON Backup</button></div></article><article><span className="adminBackupIcon">✓</span><div><h3>Development Source Backup</h3><p>Your website source code and development history are stored separately in the connected GitHub repository.</p><a href="https://github.com/asifshahnawazkhi-Rao/medicalequipes" target="_blank" rel="noreferrer">Open GitHub Repository</a><small>Passwords, secret keys, sessions and access tokens are never included in downloads.</small></div></article></div></section>}
 
       {section === "sellers" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Seller Management</h2><p>Approve, reject or review registered sellers.</p></div><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sellers..." /></div>{filters(["all", "pending", "approved", "rejected"], sellerFilter, setSellerFilter)}<div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Seller</th><th>Contact</th><th>City</th><th>Status</th><th>Verification</th><th>Actions</th></tr></thead><tbody>{visibleSellers.map((x) => <tr key={x.id}><td><strong>{x.businessName || x.fullName || "Seller"}</strong><small>{x.fullName}</small></td><td>{x.phone || "—"}</td><td>{x.city || "—"}</td><td><span className={`adminStatus ${x.status}`}>{x.status}</span></td><td>{x.cardUrl ? <a href={x.cardUrl} target="_blank" rel="noreferrer">View card</a> : "Not provided"}</td><td><div className="adminRowActions">{x.status !== "approved" && <button disabled={busyId === x.id} onClick={() => sellerStatus(x.id, "approved")}>Approve</button>}{x.status !== "rejected" && <button disabled={busyId === x.id} onClick={() => sellerStatus(x.id, "rejected")}>Reject</button>}</div></td></tr>)}</tbody></table>{!visibleSellers.length && <div className="adminEmpty">No sellers found.</div>}</div></section>}
 

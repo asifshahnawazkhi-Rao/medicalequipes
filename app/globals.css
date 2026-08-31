@@ -2054,3 +2054,60 @@
   border-color: #087f8c;
 }
 
+.adminBackupGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 24px;
+}
+
+.adminBackupGrid article {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #dce7ea;
+  border-radius: 15px;
+  background: #fbfdfe;
+}
+
+.adminBackupGrid h3 { margin: 0 0 8px; }
+.adminBackupGrid p { margin: 0 0 14px; color: #607481; line-height: 1.55; }
+.adminBackupGrid ul { margin: 0 0 18px; padding-left: 20px; color: #526772; line-height: 1.7; }
+.adminBackupGrid button,
+.adminBackupGrid a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #078a98;
+  border-radius: 9px;
+  background: #078a98;
+  padding: 10px 15px;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.adminBackupGrid small { display: block; margin-top: 15px; color: #71838e; line-height: 1.45; }
+.adminBackupIcon {
+  display: grid;
+  flex: 0 0 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e4f6f7;
+  color: #078a98;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+@media (max-width: 850px) {
+  .adminBackupGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .adminBackupGrid { padding: 16px; }
+  .adminBackupGrid article { padding: 18px; }
+}
+
