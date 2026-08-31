@@ -2110,4 +2110,70 @@
   .adminBackupGrid { padding: 16px; }
   .adminBackupGrid article { padding: 18px; }
 }
+.adminSellerLink {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.adminSellerLink strong,
+.adminSellerLink small { display: block; }
+.adminSellerLink:hover strong { color: var(--teal); text-decoration: underline; }
+.adminSellerModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7, 31, 43, .58);
+}
+.adminSellerDetails {
+  position: relative;
+  width: min(650px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 22px;
+  background: #fff;
+  padding: 32px;
+  box-shadow: 0 24px 70px rgba(7, 31, 43, .25);
+}
+.adminSellerDetails h2 { margin: 8px 0 24px; }
+.adminSellerClose {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  border: 0;
+  background: transparent;
+  color: #52677a;
+  cursor: pointer;
+  font-size: 30px;
+  line-height: 1;
+}
+.adminSellerDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.adminSellerDetailGrid > div {
+  border: 1px solid #d9e5e9;
+  border-radius: 14px;
+  padding: 14px;
+}
+.adminSellerDetailGrid span { display: block; color: #60778a; font-size: 13px; margin-bottom: 5px; }
+.adminSellerDetailActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.adminSellerDetailActions a {
+  border: 1px solid var(--teal);
+  border-radius: 10px;
+  color: var(--teal);
+  font-weight: 700;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+@media (max-width: 600px) {
+  .adminSellerDetails { padding: 26px 20px; }
+  .adminSellerDetailGrid { grid-template-columns: 1fr; }
+}
 
