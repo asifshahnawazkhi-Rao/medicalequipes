@@ -40,7 +40,8 @@ sellerBusinessName: string;
 sellerCity: string;
 sellerPhone: string;
 sellerStatus: string;
-sellerVisitingCardUrl: string;
+  sellerVisitingCardUrl: string;
+  status: string;
 };
 
 export default function ListingPage({
@@ -193,7 +194,9 @@ export default function ListingPage({
   const whatsappNumber = useMemo(() => {
     if (!listing?.contactPhone) return "";
 
-    return listing.contactPhone.replace(/[^\d]/g, "");
+    const digits = listing.contactPhone.replace(/[^\d]/g, "");
+
+    return digits.startsWith("0") ? `92${digits.slice(1)}` : digits;
   }, [listing?.contactPhone]);
 
   const whatsappMessage = useMemo(() => {
@@ -201,6 +204,14 @@ export default function ListingPage({
 
     return encodeURIComponent(
       `Hi, I am interested in your ${listing.title} listed on MedicalEquipes.`
+    );
+  }, [listing]);
+
+  const availabilityMessage = useMemo(() => {
+    if (!listing) return "";
+
+    return encodeURIComponent(
+      `Hi, please let me know when ${listing.title} is available again on MedicalEquipes. ${window.location.href}`
     );
   }, [listing]);
 
@@ -342,6 +353,13 @@ export default function ListingPage({
 
             <h1>{listing.title}</h1>
 
+            {listing.status === "out_of_stock" && (
+              <div className="listingAvailabilityNotice" role="status">
+                <strong>Out of Stock</strong>
+                <span>This equipment is currently unavailable.</span>
+              </div>
+            )}
+
             <div className="listingPriceRow">
               <div className="listingPrice">
                 {listing.price > 0 ? `Rs. ${listing.price.toLocaleString("en-PK")}` : "Ask for Price"}
@@ -434,6 +452,17 @@ export default function ListingPage({
     </div>
   )}
 
+ {listing.status === "out_of_stock" && whatsappNumber && (
+  <a
+    className="primary sellerAction notifyAvailabilityAction"
+    href={`https://wa.me/${whatsappNumber}?text=${availabilityMessage}`}
+    target="_blank"
+    rel="noreferrer"
+  >
+    Notify Me When Available
+  </a>
+ )}
+
  {isLoggedIn ? (
   <>
     {listing.contactName && (
@@ -472,6 +501,8 @@ export default function ListingPage({
     )}
 
     <div className="sellerActions">
+      {listing.status !== "out_of_stock" && (
+        <>
       {listing.contactPhone && (
         <a
           className="primary sellerAction"
@@ -501,6 +532,8 @@ export default function ListingPage({
         >
           Email Seller
         </a>
+      )}
+        </>
       )}
     </div>
   </>

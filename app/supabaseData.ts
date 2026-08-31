@@ -199,6 +199,7 @@ export type PublicListing = {
   imageUrl: string;
   brand: string;
 model: string;
+status: string;
 };
 
 export async function getPublicListings(
@@ -209,7 +210,7 @@ export async function getPublicListings(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,expires_at,categories(name),listing_images(image_url,sort_order)&status=eq.active&expires_at=gt.${encodeURIComponent(
+    `/rest/v1/listings?select=id,title,brand,model,price,city,condition,status,expires_at,categories(name),listing_images(image_url,sort_order)&status=in.(active,out_of_stock)&expires_at=gt.${encodeURIComponent(
       now
     )}&order=created_at.desc`,
     session
@@ -243,6 +244,7 @@ export async function getPublicListings(
       condition: String(row.condition ?? ""),
       brand: String(row.brand ?? ""),
       model: String(row.model ?? ""),
+      status: String(row.status ?? "active"),
       imageUrl: String(
         images[0]?.image_url ?? ""
       ),
@@ -590,6 +592,8 @@ export async function getListingById(
       sellerProfile?.visiting_card_url ?? ""
     ),
 
+    status: String(row.status ?? "active"),
+
     images,
   };
 }
@@ -815,7 +819,7 @@ export async function deleteListing(
 }
 export async function updateListingStatus(
   listingId: string,
-  status: "active" | "sold" | "draft",
+  status: "active" | "sold" | "draft" | "out_of_stock",
   session: AuthSession
 ) {
   requireUserSession(session);
@@ -1043,7 +1047,7 @@ export async function getPublicSellerListings(
   >(
     `/rest/v1/listings?select=id,title,price,city,condition,brand,model,status,expires_at,categories(name),listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
       sellerId
-    )}&status=eq.active&expires_at=gt.${encodeURIComponent(
+    )}&status=in.(active,out_of_stock)&expires_at=gt.${encodeURIComponent(
       now
     )}&order=created_at.desc`
   );
@@ -1076,6 +1080,7 @@ export async function getPublicSellerListings(
       condition: String(row.condition ?? ""),
       brand: String(row.brand ?? ""),
       model: String(row.model ?? ""),
+      status: String(row.status ?? "active"),
       imageUrl: String(
         images[0]?.image_url ?? ""
       ),
@@ -1276,3 +1281,4 @@ export async function submitListingReport(
     }
   );
 }
+

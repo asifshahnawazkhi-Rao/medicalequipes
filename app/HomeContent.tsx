@@ -27,7 +27,8 @@ type Listing = [
   string, // imageUrl
   string, // brand
   string, // model
-  number  // numericPrice
+  number, // numericPrice
+  string  // status
 ];
 
 
@@ -125,6 +126,7 @@ useEffect(() => {
   item.brand,
   item.model,
   item.price,
+  item.status,
 ])
       );
     })
@@ -474,7 +476,7 @@ const cityOptions = useMemo(() => {
     Clear filters
   </button>
 </div>
-        {filtered.length > 0 ? <div className="listingGrid">{sortedListings.map(([id, title, cat, price, listingCity, condition, imageUrl]) => <article className="listing" key={id}><div className="listingImage">
+        {filtered.length > 0 ? <div className="listingGrid">{sortedListings.map(([id, title, cat, price, listingCity, condition, imageUrl, , , , status]) => <article className={status === "out_of_stock" ? "listing outOfStock" : "listing"} key={id}><div className="listingImage">
   <a
     className="listingImageLink"
     href={`/listing/${id}`}
@@ -489,7 +491,7 @@ const cityOptions = useMemo(() => {
     ) : (
       <div className="equipmentShape" />
     )}
-  </a><span className="badge">{condition}</span><button
+  </a><span className={status === "out_of_stock" ? "badge outOfStockBadge" : "badge"}>{status === "out_of_stock" ? "Out of Stock" : condition}</span><button
   className="heart"
   type="button"
   onClick={() => toggleFavorite(id)}
@@ -497,7 +499,7 @@ const cityOptions = useMemo(() => {
 >
   {favorites.includes(id) ? "♥" : "♡"}
 </button></div><div className="listingBody"><small>{cat}</small><h3>{title}</h3><strong>{price}</strong><p>⌖ {listingCity} <span>·</span> <em>✓ Verified Seller</em></p><button type="button" onClick={() => contactSeller(id)}>
-  Contact Seller
+  {status === "out_of_stock" ? "Notify Me When Available" : "Contact Seller"}
 </button></div></article>)}</div> : <div className="emptyState"><h3>No equipment found</h3><p>Try another keyword, location or category.</p><button
   className="primary"
   type="button"

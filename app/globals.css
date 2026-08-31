@@ -1131,6 +1131,35 @@
   margin-top: 22px;
 }
 
+.listingAvailabilityNotice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+  padding: 12px 14px;
+  border: 1px solid #f0b9b9;
+  border-radius: 12px;
+  background: #fff3f3;
+  color: #8f2020;
+}
+
+.listingAvailabilityNotice span {
+  color: #6f3b3b;
+}
+
+.notifyAvailabilityAction {
+  width: 100%;
+}
+
+.listing.outOfStock .listingPhoto {
+  opacity: 0.68;
+}
+
+.badge.outOfStockBadge {
+  background: #a32626;
+  color: #fff;
+}
+
 .photoInputGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

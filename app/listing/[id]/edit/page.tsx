@@ -653,7 +653,9 @@ async function moveExistingImage(
                   step="1"
                   required={!priceOnRequest}
                   disabled={priceOnRequest}
-                  defaultValue={listing.price > 0 ? listing.price : ""}
+                  defaultValue={
+                    listing.price > 0 ? listing.price : ""
+                  }
                   placeholder={priceOnRequest ? "Ask for Price" : "Enter price"}
                 />
                 <span className="priceRequestOption">
@@ -936,3 +938,4 @@ async function moveExistingImage(
     </main>
   );
 }
+

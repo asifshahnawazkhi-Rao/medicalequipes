@@ -16,6 +16,7 @@ type ListingFilter =
   | "all"
   | "active"
   | "sold"
+  | "out_of_stock"
   | "draft"
   | "expired";
 
@@ -85,6 +86,9 @@ export default function Dashboard() {
     active,
     sold: listings.filter(
       (listing) => listing.status === "sold"
+    ).length,
+    outOfStock: listings.filter(
+      (listing) => listing.status === "out_of_stock"
     ).length,
     draft: listings.filter(
       (listing) => listing.status === "draft"
@@ -243,7 +247,7 @@ function getAnalytics(listingId: string) {
 
   async function handleStatusChange(
   listingId: string,
-  nextStatus: "active" | "sold" | "draft"
+  nextStatus: "active" | "sold" | "draft" | "out_of_stock"
 ) {
   if (nextStatus === "draft") {
     const confirmed = window.confirm(
@@ -366,6 +370,11 @@ function getAnalytics(listingId: string) {
                 <span>Sold</span>
                 <strong>{counts.sold}</strong>
               </div>
+
+              <div className="dashboardStatCard">
+                <span>Out of Stock</span>
+                <strong>{counts.outOfStock}</strong>
+              </div>
           
               <div className="dashboardStatCard">
                 <span>Inactive</span>
@@ -426,6 +435,13 @@ function getAnalytics(listingId: string) {
                 }
               >
                 Sold ({counts.sold})
+              </button>
+              <button
+                type="button"
+                className={filter === "out_of_stock" ? "primary" : ""}
+                onClick={() => setFilter("out_of_stock")}
+              >
+                Out of Stock ({counts.outOfStock})
               </button>
               <button
                 type="button"
@@ -508,6 +524,8 @@ function getAnalytics(listingId: string) {
       ? "Active"
       : listing.status === "sold"
         ? "Sold"
+        : listing.status === "out_of_stock"
+          ? "Out of Stock"
         : listing.status}
 </span>
                  
@@ -615,6 +633,18 @@ function getAnalytics(listingId: string) {
       onClick={() =>
         handleStatusChange(
           listing.id,
+          "out_of_stock"
+        )
+      }
+    >
+      Mark Out of Stock
+    </button>
+
+    <button
+      type="button"
+      onClick={() =>
+        handleStatusChange(
+          listing.id,
           "draft"
         )
       }
@@ -622,7 +652,7 @@ function getAnalytics(listingId: string) {
       Deactivate
     </button>
   </>
-) : listing.status === "sold" ? (
+) : listing.status === "sold" || listing.status === "out_of_stock" ? (
   <button
     type="button"
     onClick={() =>
@@ -632,7 +662,7 @@ function getAnalytics(listingId: string) {
       )
     }
   >
-    Mark Active
+    {listing.status === "out_of_stock" ? "Mark Available" : "Mark Active"}
   </button>
 ) : listing.status === "draft" ? (
   <button
@@ -666,3 +696,4 @@ function getAnalytics(listingId: string) {
     </main>
   );
 }
+
