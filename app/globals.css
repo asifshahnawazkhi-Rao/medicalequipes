@@ -2033,8 +2033,24 @@
     grid-template-columns: 1fr;
   }
 
-  .imageEditorModal {
+.imageEditorModal {
     padding: 18px;
   }
+}
+
+.adminNavLink {
+  background: #e7f6f7 !important;
+  color: #087f8c !important;
+}
+
+.dashboardTopActions .adminDashboardButton {
+  border-color: #10233d;
+  background: #10233d;
+  color: #fff;
+}
+
+.dashboardTopActions .adminDashboardButton:hover {
+  background: #087f8c;
+  border-color: #087f8c;
 }
 

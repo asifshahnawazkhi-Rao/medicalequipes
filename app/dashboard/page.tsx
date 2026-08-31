@@ -10,6 +10,7 @@ import {
   renewListing,
   getSellerListingAnalytics,
   ListingAnalytics,
+  getProfile,
 } from "../supabaseData";
 
 type ListingFilter =
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [filter, setFilter] = useState<ListingFilter>("all");
   const [analytics, setAnalytics] = useState<
   ListingAnalytics[]
@@ -43,14 +45,16 @@ export default function Dashboard() {
 
   async function loadDashboard() {
     try {
-      const [sellerListings, analyticsData] =
+      const [sellerListings, analyticsData, profile] =
         await Promise.all([
           getSellerListings(validSession),
           getSellerListingAnalytics(validSession),
+          getProfile(validSession),
         ]);
 
       setListings(sellerListings);
       setAnalytics(analyticsData);
+      setIsAdmin(profile?.role?.toLowerCase() === "admin");
     } catch (error) {
       console.error(error);
     } finally {
@@ -310,6 +314,7 @@ function getAnalytics(listingId: string) {
             <a href="/">Marketplace</a>
             <a href="/sell">Sell Equipment</a>
             <a href="/profile">Profile</a>
+            {isAdmin && <a className="adminNavLink" href="/admin">Admin Dashboard</a>}
           </nav>
         </div>
       </header>
@@ -330,6 +335,16 @@ function getAnalytics(listingId: string) {
           </div>
 
           <div className="dashboardTopActions">
+            {isAdmin && (
+              <button
+                className="adminDashboardButton"
+                type="button"
+                onClick={() => window.location.assign("/admin")}
+              >
+                Admin Dashboard
+              </button>
+            )}
+
             <button
               className="primary"
               type="button"
