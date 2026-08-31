@@ -1,393 +1,116 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getStoredSession } from "../auth";
+import { clearSession, getStoredSession } from "../auth";
 import {
-  getAdminSellers,
-  getProfile,
-  getVisitingCardSignedUrl,
-  updateSellerApproval,
-  type AdminSellerProfile,
+  getAdminListings, getAdminReports, getAdminSellers, getProfile,
+  getVisitingCardSignedUrl, updateAdminListingStatus, updateAdminReportStatus,
+  updateSellerApproval, type AdminListing, type AdminReport, type AdminSellerProfile,
 } from "../supabaseData";
 
-type SellerWithCard = AdminSellerProfile & {
-  cardUrl?: string;
-};
-
-type SellerFilter = "pending" | "approved" | "rejected";
+type Section = "overview" | "sellers" | "listings" | "reports";
+type SellerWithCard = AdminSellerProfile & { cardUrl?: string };
 
 export default function AdminPage() {
+  const [section, setSection] = useState<Section>("overview");
   const [sellers, setSellers] = useState<SellerWithCard[]>([]);
-  const [filter, setFilter] = useState<SellerFilter>("pending");
+  const [listings, setListings] = useState<AdminListing[]>([]);
+  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [sellerFilter, setSellerFilter] = useState("all");
+  const [listingFilter, setListingFilter] = useState("all");
+  const [reportFilter, setReportFilter] = useState("pending");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const stored = getStoredSession();
-
-    if (!stored?.access_token) {
-      window.location.replace("/");
-      return;
-    }
-
-    const session = stored;
-
-    async function loadAdmin() {
+    const session = getStoredSession();
+    if (!session?.access_token) { window.location.replace("/"); return; }
+    async function load() {
       try {
-        const profile = await getProfile(session);
-
-        if (!profile || profile.role !== "admin") {
-          window.location.replace("/dashboard");
-          return;
-        }
-
-        const allSellers = await getAdminSellers(session);
-
-        const withCards: SellerWithCard[] = await Promise.all(
-          allSellers.map(async (seller) => {
-            if (!seller.visitingCardUrl) {
-              return seller;
-            }
-
-            try {
-              const cardUrl = await getVisitingCardSignedUrl(
-                session,
-                seller.visitingCardUrl
-              );
-
-              return {
-                ...seller,
-                cardUrl,
-              };
-            } catch (err) {
-              console.error(err);
-              return seller;
-            }
-          })
-        );
-
-        setSellers(withCards);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Could not load sellers."
-        );
-      } finally {
-        setLoading(false);
-      }
+        const profile = await getProfile(session!);
+        if (!profile || profile.role.toLowerCase() !== "admin") { window.location.replace("/dashboard"); return; }
+        const [sellerRows, listingRows, reportRows] = await Promise.all([
+          getAdminSellers(session!), getAdminListings(session!), getAdminReports(session!),
+        ]);
+        const cards = await Promise.all(sellerRows.map(async (seller) => {
+          if (!seller.visitingCardUrl) return seller;
+          try { return { ...seller, cardUrl: await getVisitingCardSignedUrl(session!, seller.visitingCardUrl) }; }
+          catch { return seller; }
+        }));
+        const listingsWithSellers = listingRows.map((listing) => {
+          const seller = sellerRows.find((item) => item.id === listing.sellerId);
+          return { ...listing, sellerName: seller?.fullName ?? "", sellerBusinessName: seller?.businessName ?? "" };
+        });
+        setSellers(cards); setListings(listingsWithSellers); setReports(reportRows);
+      } catch (err) { setError(err instanceof Error ? err.message : "Could not load admin dashboard."); }
+      finally { setLoading(false); }
     }
-
-    loadAdmin();
+    load();
   }, []);
 
-  const filteredSellers = useMemo(() => {
-    return sellers.filter(
-      (seller) => seller.status === filter
-    );
-  }, [sellers, filter]);
+  const stats = useMemo(() => ({
+    sellers: sellers.length,
+    pendingSellers: sellers.filter((x) => x.status === "pending").length,
+    listings: listings.length,
+    activeListings: listings.filter((x) => x.status === "active").length,
+    pendingReports: reports.filter((x) => x.status === "pending").length,
+    resolvedReports: reports.filter((x) => x.status === "resolved").length,
+  }), [sellers, listings, reports]);
 
-  const counts = useMemo(() => {
-    return {
-      pending: sellers.filter(
-        (seller) => seller.status === "pending"
-      ).length,
+  const visibleSellers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sellers.filter((x) => (sellerFilter === "all" || x.status === sellerFilter) && (!q || `${x.fullName} ${x.businessName} ${x.phone} ${x.city}`.toLowerCase().includes(q)));
+  }, [sellers, sellerFilter, search]);
+  const visibleListings = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return listings.filter((x) => (listingFilter === "all" || x.status === listingFilter) && (!q || `${x.title} ${x.sellerName} ${x.sellerBusinessName} ${x.city}`.toLowerCase().includes(q)));
+  }, [listings, listingFilter, search]);
+  const visibleReports = useMemo(() => reports.filter((x) => reportFilter === "all" || x.status === reportFilter), [reports, reportFilter]);
 
-      approved: sellers.filter(
-        (seller) => seller.status === "approved"
-      ).length,
-
-      rejected: sellers.filter(
-        (seller) => seller.status === "rejected"
-      ).length,
-    };
-  }, [sellers]);
-
-  async function handleApproval(
-    sellerId: string,
-    status: "approved" | "rejected"
-  ) {
-    const session = getStoredSession();
-
-    if (!session?.access_token) {
-      window.location.replace("/");
-      return;
-    }
-
-    setMessage("");
-    setError("");
-
-    try {
-      await updateSellerApproval(
-        session,
-        sellerId,
-        status
-      );
-
-      setSellers((current) =>
-        current.map((seller) =>
-          seller.id === sellerId
-            ? {
-                ...seller,
-                status,
-              }
-            : seller
-        )
-      );
-
-      setMessage(
-        status === "approved"
-          ? "Seller approved successfully."
-          : "Seller rejected successfully."
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not update seller approval."
-      );
-    }
+  async function sellerStatus(id: string, status: "approved" | "rejected") {
+    const session = getStoredSession(); if (!session) return;
+    try { setBusyId(id); setError(""); await updateSellerApproval(session, id, status); setSellers((rows) => rows.map((x) => x.id === id ? { ...x, status } : x)); setMessage(`Seller ${status}.`); }
+    catch (err) { setError(err instanceof Error ? err.message : "Could not update seller."); }
+    finally { setBusyId(""); }
   }
-
-  if (loading) {
-    return (
-      <main className="dashboardPage">
-        Loading admin dashboard...
-      </main>
-    );
+  async function listingStatus(id: string, status: "active" | "sold" | "draft" | "out_of_stock") {
+    const session = getStoredSession(); if (!session) return;
+    try { setBusyId(id); setError(""); await updateAdminListingStatus(session, id, status); setListings((rows) => rows.map((x) => x.id === id ? { ...x, status } : x)); setMessage("Listing status updated."); }
+    catch (err) { setError(err instanceof Error ? err.message : "Could not update listing."); }
+    finally { setBusyId(""); }
   }
+  async function reportStatus(id: string, status: "reviewed" | "resolved" | "dismissed") {
+    const session = getStoredSession(); if (!session) return;
+    try { setBusyId(id); setError(""); await updateAdminReportStatus(session, id, status); setReports((rows) => rows.map((x) => x.id === id ? { ...x, status } : x)); setMessage("Report status updated."); }
+    catch (err) { setError(err instanceof Error ? err.message : "Could not update report."); }
+    finally { setBusyId(""); }
+  }
+  function logout() { clearSession(); window.location.assign("/"); }
 
-  return (
-    <main className="sellerDashboardPage">
-      <header className="header">
-        <div className="container nav">
-          <a className="brand" href="/">
-            <span className="brandMark">+</span>
-            <span>
-              Medical<span>Equipes</span>
-            </span>
-          </a>
+  if (loading) return <main className="dashboardPage">Loading admin dashboard...</main>;
 
-          <nav>
-            <a href="/">Marketplace</a>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/profile">Profile</a>
-          </nav>
-        </div>
-      </header>
-
-      <div className="container sellerDashboardContainer">
-        <section className="dashboardWelcome">
-          <div>
-            <span className="eyebrow">
-              ADMIN DASHBOARD
-            </span>
-
-            <h1>Seller Management</h1>
-
-            <p>
-              Review pending sellers and manage approved
-              or rejected marketplace sellers.
-            </p>
-          </div>
-        </section>
-
-        <div
-          className="dashboardListingActions"
-          style={{ marginBottom: "24px" }}
-        >
-          <button
-            type="button"
-            className={
-              filter === "pending"
-                ? "primary"
-                : ""
-            }
-            onClick={() =>
-              setFilter("pending")
-            }
-          >
-            Pending ({counts.pending})
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "approved"
-                ? "primary"
-                : ""
-            }
-            onClick={() =>
-              setFilter("approved")
-            }
-          >
-            Approved ({counts.approved})
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "rejected"
-                ? "primary"
-                : ""
-            }
-            onClick={() =>
-              setFilter("rejected")
-            }
-          >
-            Rejected ({counts.rejected})
-          </button>
-        </div>
-
-        {message && (
-          <div className="authMessage">
-            {message}
-          </div>
-        )}
-
-        {error && (
-          <div className="formError">
-            {error}
-          </div>
-        )}
-
-        {filteredSellers.length === 0 ? (
-          <div className="dashboardEmpty">
-            <h2>
-              No {filter} sellers
-            </h2>
-
-            <p>
-              There are currently no sellers in this
-              section.
-            </p>
-          </div>
-        ) : (
-          <div className="dashboardListingGrid">
-            {filteredSellers.map((seller) => (
-              <article
-                className="dashboardListingCard"
-                key={seller.id}
-              >
-                <div className="dashboardListingBody">
-                  <span className="dashboardStatus">
-                    {seller.status}
-                  </span>
-
-                  <h2>
-                    {seller.businessName ||
-                      seller.fullName ||
-                      "Seller"}
-                  </h2>
-
-                  {seller.fullName && (
-                    <p>
-                      <strong>Name:</strong>{" "}
-                      {seller.fullName}
-                    </p>
-                  )}
-
-                  {seller.businessName && (
-                    <p>
-                      <strong>Business:</strong>{" "}
-                      {seller.businessName}
-                    </p>
-                  )}
-
-                  {seller.phone && (
-                    <p>
-                      <strong>Phone:</strong>{" "}
-                      {seller.phone}
-                    </p>
-                  )}
-
-                  {seller.city && (
-                    <p>
-                      <strong>City:</strong>{" "}
-                      {seller.city}
-                    </p>
-                  )}
-
-                  {seller.cardUrl && (
-                    <p>
-                      <a
-                        href={seller.cardUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View Visiting Card
-                      </a>
-                    </p>
-                  )}
-
-                  {seller.status === "pending" && (
-                    <div className="dashboardListingActions">
-                      <button
-                        className="primary"
-                        type="button"
-                        onClick={() =>
-                          handleApproval(
-                            seller.id,
-                            "approved"
-                          )
-                        }
-                      >
-                        Approve
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleApproval(
-                            seller.id,
-                            "rejected"
-                          )
-                        }
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-
-                  {seller.status === "approved" && (
-                    <div className="dashboardListingActions">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleApproval(
-                            seller.id,
-                            "rejected"
-                          )
-                        }
-                      >
-                        Revoke Approval
-                      </button>
-                    </div>
-                  )}
-
-                  {seller.status === "rejected" && (
-                    <div className="dashboardListingActions">
-                      <button
-                        className="primary"
-                        type="button"
-                        onClick={() =>
-                          handleApproval(
-                            seller.id,
-                            "approved"
-                          )
-                        }
-                      >
-                        Approve Seller
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-    </main>
+  const filters = (items: string[], current: string, change: (value: string) => void) => (
+    <div className="adminFilters">{items.map((item) => <button key={item} className={current === item ? "active" : ""} type="button" onClick={() => change(item)}>{item.replaceAll("_", " ")}</button>)}</div>
   );
+
+  return <main className="adminDashboardPage">
+    <header className="header"><div className="container nav"><a className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="/">Marketplace</a><a href="/dashboard">Seller Dashboard</a><a href="/profile">Profile</a></nav><button className="adminLogout" type="button" onClick={logout}>Logout</button></div></header>
+    <div className="container adminDashboardContainer">
+      <section className="adminHero"><div><span className="eyebrow">ADMIN CONTROL CENTER</span><h1>Marketplace Administration</h1><p>Manage sellers, listings and marketplace safety from one place.</p></div><div className="adminHeroBadge">Secure Admin Area</div></section>
+      <nav className="adminTabs">{(["overview", "sellers", "listings", "reports"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} type="button" onClick={() => { setSection(item); setSearch(""); }}>{item === "reports" && stats.pendingReports ? `Reports (${stats.pendingReports})` : item}</button>)}</nav>
+      {message && <div className="authMessage adminMessage">{message}</div>}{error && <div className="formError adminMessage">{error}</div>}
+
+      {section === "overview" && <><section className="adminStats"><div><span>Total Sellers</span><strong>{stats.sellers}</strong></div><div><span>Pending Sellers</span><strong>{stats.pendingSellers}</strong></div><div><span>Total Listings</span><strong>{stats.listings}</strong></div><div><span>Active Listings</span><strong>{stats.activeListings}</strong></div><div><span>Pending Reports</span><strong>{stats.pendingReports}</strong></div><div><span>Resolved Reports</span><strong>{stats.resolvedReports}</strong></div></section><section className="adminQuickGrid"><button onClick={() => setSection("sellers")}><span>Seller Approvals</span><strong>{stats.pendingSellers} pending</strong><small>Review profiles and verification cards.</small></button><button onClick={() => setSection("listings")}><span>Listing Control</span><strong>{stats.listings} listings</strong><small>Control listing availability and status.</small></button><button onClick={() => setSection("reports")}><span>Safety Reports</span><strong>{stats.pendingReports} pending</strong><small>Review reports submitted by users.</small></button></section></>}
+
+      {section === "sellers" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Seller Management</h2><p>Approve, reject or review registered sellers.</p></div><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sellers..." /></div>{filters(["all", "pending", "approved", "rejected"], sellerFilter, setSellerFilter)}<div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Seller</th><th>Contact</th><th>City</th><th>Status</th><th>Verification</th><th>Actions</th></tr></thead><tbody>{visibleSellers.map((x) => <tr key={x.id}><td><strong>{x.businessName || x.fullName || "Seller"}</strong><small>{x.fullName}</small></td><td>{x.phone || "—"}</td><td>{x.city || "—"}</td><td><span className={`adminStatus ${x.status}`}>{x.status}</span></td><td>{x.cardUrl ? <a href={x.cardUrl} target="_blank" rel="noreferrer">View card</a> : "Not provided"}</td><td><div className="adminRowActions">{x.status !== "approved" && <button disabled={busyId === x.id} onClick={() => sellerStatus(x.id, "approved")}>Approve</button>}{x.status !== "rejected" && <button disabled={busyId === x.id} onClick={() => sellerStatus(x.id, "rejected")}>Reject</button>}</div></td></tr>)}</tbody></table>{!visibleSellers.length && <div className="adminEmpty">No sellers found.</div>}</div></section>}
+
+      {section === "listings" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Listing Management</h2><p>Monitor and control marketplace listings.</p></div><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search listings..." /></div>{filters(["all", "active", "out_of_stock", "sold", "draft"], listingFilter, setListingFilter)}<div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Listing</th><th>Seller</th><th>Price</th><th>City</th><th>Status</th><th>Action</th></tr></thead><tbody>{visibleListings.map((x) => <tr key={x.id}><td><a href={`/listing/${x.id}`} target="_blank"><strong>{x.title}</strong></a><small>{x.createdAt ? new Date(x.createdAt).toLocaleDateString("en-PK") : ""}</small></td><td>{x.sellerBusinessName || x.sellerName || "—"}</td><td>{x.price > 0 ? `Rs. ${x.price.toLocaleString("en-PK")}` : "Ask for Price"}</td><td>{x.city}</td><td><span className={`adminStatus ${x.status}`}>{x.status.replaceAll("_", " ")}</span></td><td><select value={x.status} disabled={busyId === x.id} onChange={(e) => listingStatus(x.id, e.target.value as "active" | "sold" | "draft" | "out_of_stock")}><option value="active">Active</option><option value="out_of_stock">Out of Stock</option><option value="sold">Sold</option><option value="draft">Inactive</option></select></td></tr>)}</tbody></table>{!visibleListings.length && <div className="adminEmpty">No listings found.</div>}</div></section>}
+
+      {section === "reports" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Marketplace Reports</h2><p>Review safety reports submitted by users.</p></div></div>{filters(["all", "pending", "reviewed", "resolved", "dismissed"], reportFilter, setReportFilter)}<div className="adminReportGrid">{visibleReports.map((x) => <article className="adminReportCard" key={x.id}><div><span className={`adminStatus ${x.status}`}>{x.status}</span><small>{x.createdAt ? new Date(x.createdAt).toLocaleString("en-PK") : ""}</small></div><h3>{x.reason.replaceAll("_", " ")}</h3><p>{x.description || "No additional details provided."}</p>{x.targetType === "listing" && <a href={`/listing/${x.targetId}`} target="_blank">View reported listing →</a>}<div className="adminRowActions"><button disabled={busyId === x.id} onClick={() => reportStatus(x.id, "reviewed")}>Reviewed</button><button disabled={busyId === x.id} onClick={() => reportStatus(x.id, "resolved")}>Resolve</button><button disabled={busyId === x.id} onClick={() => reportStatus(x.id, "dismissed")}>Dismiss</button></div></article>)}</div>{!visibleReports.length && <div className="adminEmpty">No reports in this section.</div>}</section>}
+    </div>
+  </main>;
 }
+

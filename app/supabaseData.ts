@@ -926,6 +926,38 @@ export async function getAdminSellers(
     ),
   }));
 }
+
+export type AdminListing = {
+  id: string; title: string; sellerId: string; price: number; city: string;
+  status: string; createdAt: string; sellerName: string; sellerBusinessName: string;
+};
+
+export async function getAdminListings(session: AuthSession): Promise<AdminListing[]> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    "/rest/v1/listings?select=id,title,seller_id,price,city,status,created_at&order=created_at.desc",
+    session
+  );
+  return rows.map((row) => ({ id: String(row.id ?? ""), title: String(row.title ?? ""), sellerId: String(row.seller_id ?? ""), price: Number(row.price ?? 0), city: String(row.city ?? ""), status: String(row.status ?? ""), createdAt: String(row.created_at ?? ""), sellerName: "", sellerBusinessName: "" }));
+}
+
+export async function updateAdminListingStatus(session: AuthSession, listingId: string, status: "active" | "sold" | "draft" | "out_of_stock") {
+  requireUserSession(session);
+  await supabaseFetch(`/rest/v1/listings?id=eq.${encodeURIComponent(listingId)}`, session, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status }) });
+}
+
+export type AdminReport = { id: string; reporterId: string; targetId: string; targetType: string; reason: string; description: string; status: string; createdAt: string };
+
+export async function getAdminReports(session: AuthSession): Promise<AdminReport[]> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/reports?select=id,reporter_id,target_id,target_type,reason,description,status,created_at&order=created_at.desc", session);
+  return rows.map((row) => ({ id: String(row.id ?? ""), reporterId: String(row.reporter_id ?? ""), targetId: String(row.target_id ?? ""), targetType: String(row.target_type ?? ""), reason: String(row.reason ?? ""), description: String(row.description ?? ""), status: String(row.status ?? "pending"), createdAt: String(row.created_at ?? "") }));
+}
+
+export async function updateAdminReportStatus(session: AuthSession, reportId: string, status: "reviewed" | "resolved" | "dismissed") {
+  requireUserSession(session);
+  await supabaseFetch(`/rest/v1/reports?id=eq.${encodeURIComponent(reportId)}`, session, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status }) });
+}
 export async function getFavoriteListingIds(
   session: AuthSession
 ): Promise<string[]> {
