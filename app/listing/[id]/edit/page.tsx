@@ -467,15 +467,30 @@ async function moveExistingImage(
         );
       }
 
+      setMessage("Updating Facebook post...");
+      const facebookResponse = await fetch("/api/facebook/publish-listing", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ listingId, action: "update" }),
+      });
+      const facebookResult = await facebookResponse.json().catch(() => ({}));
+
       setMessage(
-        "Listing updated successfully."
+        facebookResponse.ok
+          ? facebookResult.updated
+            ? "Listing and existing Facebook post updated successfully."
+            : "Listing updated and shared on Facebook."
+          : `Listing updated successfully. Facebook update could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
       );
 
       window.setTimeout(() => {
         window.location.assign(
           `/listing/${listingId}`
         );
-      }, 900);
+      }, facebookResponse.ok ? 1200 : 3000);
     } catch (err) {
       setMessage("");
 

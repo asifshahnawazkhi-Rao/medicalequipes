@@ -14,7 +14,7 @@ type ListingRow = {
   listing_images?: Array<{ image_url?: string | null; sort_order?: number | null }>;
 };
 
-function facebookCaption(listing: ListingRow) {
+function facebookCaption(listing: ListingRow, updated = false) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://medicalequipes.com").replace(/\/$/, "");
   const details = [
     listing.categories?.name,
@@ -28,12 +28,39 @@ function facebookCaption(listing: ListingRow) {
   ].filter(Boolean);
 
   return [
-    `New listing: ${listing.title}`,
+    `${updated ? "Updated listing" : "New listing"}: ${listing.title}`,
     details.join("\n"),
     listing.description?.trim().slice(0, 1000),
     `View listing: ${siteUrl}/listing/${listing.id}`,
     "#MedicalEquipment #MedicalEquipes",
   ].filter(Boolean).join("\n\n");
+}
+
+async function findExistingPostId(
+  pageId: string,
+  listingId: string,
+  accessToken: string
+) {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://medicalequipes.com").replace(/\/$/, "");
+  const listingUrl = `${siteUrl}/listing/${listingId}`;
+  let nextUrl = new URL(`https://graph.facebook.com/v26.0/${pageId}/published_posts`);
+  nextUrl.searchParams.set("fields", "id,message");
+  nextUrl.searchParams.set("limit", "100");
+  nextUrl.searchParams.set("access_token", accessToken);
+
+  for (let page = 0; page < 5; page++) {
+    const response = await fetch(nextUrl, { cache: "no-store" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !Array.isArray(data?.data)) return "";
+    const match = data.data.find((item: { id?: string; message?: string }) =>
+      String(item.message ?? "").includes(listingUrl)
+    );
+    if (match?.id) return String(match.id);
+    if (!data?.paging?.next) return "";
+    nextUrl = new URL(data.paging.next);
+  }
+
+  return "";
 }
 
 async function graphPost(path: string, values: Record<string, string>) {
@@ -74,7 +101,10 @@ async function resolvePageAccessToken(pageId: string, storedToken: string) {
 export async function POST(request: NextRequest) {
   try {
     const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    const { listingId } = await request.json() as { listingId?: string };
+    const { listingId, action = "publish" } = await request.json() as {
+      listingId?: string;
+      action?: "publish" | "update";
+    };
     if (!accessToken || !listingId) {
       return NextResponse.json({ error: "Missing session or listing id." }, { status: 400 });
     }
@@ -103,19 +133,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Active listing was not found." }, { status: 404 });
     }
 
-    const caption = facebookCaption(listing);
     const resolvedPageToken = await resolvePageAccessToken(
       pageId,
       pageAccessToken
     );
+    const existingPostId = action === "update"
+      ? await findExistingPostId(pageId, listing.id, resolvedPageToken)
+      : "";
+    const caption = facebookCaption(listing, Boolean(existingPostId));
     const imageUrl = [...(listing.listing_images || [])]
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))[0]?.image_url;
 
-    const result = imageUrl
-      ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: resolvedPageToken })
-      : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
+    const result = existingPostId
+      ? await graphPost(existingPostId, { message: caption, access_token: resolvedPageToken })
+      : imageUrl
+        ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: resolvedPageToken })
+        : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
 
-    return NextResponse.json({ ok: true, postId: result.post_id || result.id });
+    return NextResponse.json({
+      ok: true,
+      updated: Boolean(existingPostId),
+      postId: existingPostId || result.post_id || result.id,
+    });
   } catch (error) {
     console.error("Facebook listing publish failed", error);
     return NextResponse.json(
