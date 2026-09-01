@@ -36,14 +36,32 @@ function facebookCaption(listing: ListingRow, updated = false) {
   ].filter(Boolean).join("\n\n");
 }
 
-async function findExistingPostId(
+async function findExistingFacebookPost(
   pageId: string,
   listingId: string,
   accessToken: string
 ) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://medicalequipes.com").replace(/\/$/, "");
   const listingUrl = `${siteUrl}/listing/${listingId}`;
-  let nextUrl = new URL(`https://graph.facebook.com/v26.0/${pageId}/published_posts`);
+  let nextUrl = new URL(`https://graph.facebook.com/v26.0/${pageId}/photos`);
+  nextUrl.searchParams.set("fields", "id,name");
+  nextUrl.searchParams.set("type", "uploaded");
+  nextUrl.searchParams.set("limit", "100");
+  nextUrl.searchParams.set("access_token", accessToken);
+
+  for (let page = 0; page < 5; page++) {
+    const response = await fetch(nextUrl, { cache: "no-store" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !Array.isArray(data?.data)) break;
+    const match = data.data.find((item: { id?: string; name?: string }) =>
+      String(item.name ?? "").includes(listingUrl)
+    );
+    if (match?.id) return { id: String(match.id), type: "photo" as const };
+    if (!data?.paging?.next) break;
+    nextUrl = new URL(data.paging.next);
+  }
+
+  nextUrl = new URL(`https://graph.facebook.com/v26.0/${pageId}/published_posts`);
   nextUrl.searchParams.set("fields", "id,message");
   nextUrl.searchParams.set("limit", "100");
   nextUrl.searchParams.set("access_token", accessToken);
@@ -51,16 +69,16 @@ async function findExistingPostId(
   for (let page = 0; page < 5; page++) {
     const response = await fetch(nextUrl, { cache: "no-store" });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !Array.isArray(data?.data)) return "";
+    if (!response.ok || !Array.isArray(data?.data)) return null;
     const match = data.data.find((item: { id?: string; message?: string }) =>
       String(item.message ?? "").includes(listingUrl)
     );
-    if (match?.id) return String(match.id);
-    if (!data?.paging?.next) return "";
+    if (match?.id) return { id: String(match.id), type: "feed" as const };
+    if (!data?.paging?.next) return null;
     nextUrl = new URL(data.paging.next);
   }
 
-  return "";
+  return null;
 }
 
 async function graphPost(path: string, values: Record<string, string>) {
@@ -137,23 +155,39 @@ export async function POST(request: NextRequest) {
       pageId,
       pageAccessToken
     );
-    const existingPostId = action === "update"
-      ? await findExistingPostId(pageId, listing.id, resolvedPageToken)
-      : "";
-    const caption = facebookCaption(listing, Boolean(existingPostId));
+    const existingPost = action === "update"
+      ? await findExistingFacebookPost(pageId, listing.id, resolvedPageToken)
+      : null;
+    const caption = facebookCaption(listing, Boolean(existingPost));
     const imageUrl = [...(listing.listing_images || [])]
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))[0]?.image_url;
 
-    const result = existingPostId
-      ? await graphPost(existingPostId, { message: caption, access_token: resolvedPageToken })
-      : imageUrl
+    let result: Record<string, unknown>;
+    let updated = false;
+
+    if (existingPost) {
+      try {
+        result = await graphPost(existingPost.id, {
+          [existingPost.type === "photo" ? "caption" : "message"]: caption,
+          access_token: resolvedPageToken,
+        });
+        updated = true;
+      } catch (updateError) {
+        console.warn("Facebook post update failed; creating a replacement post.", updateError);
+        result = imageUrl
+          ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: resolvedPageToken })
+          : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
+      }
+    } else {
+      result = imageUrl
         ? await graphPost(`${pageId}/photos`, { url: imageUrl, caption, access_token: resolvedPageToken })
         : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
+    }
 
     return NextResponse.json({
       ok: true,
-      updated: Boolean(existingPostId),
-      postId: existingPostId || result.post_id || result.id,
+      updated,
+      postId: updated ? existingPost?.id : result.post_id || result.id,
     });
   } catch (error) {
     console.error("Facebook listing publish failed", error);
