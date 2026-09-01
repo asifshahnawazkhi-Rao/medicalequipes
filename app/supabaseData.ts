@@ -636,6 +636,38 @@ export async function updateProfile(
     }
   );
 }
+
+export async function initializeSellerProfile(
+  session: AuthSession,
+  values: {
+    fullName: string;
+    phone: string;
+    businessName: string;
+    city: string;
+  }
+) {
+  requireUserSession(session);
+
+  await supabaseFetch(
+    "/rest/v1/profiles?on_conflict=id",
+    session,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        id: session.user!.id,
+        full_name: values.fullName,
+        phone: values.phone,
+        business_name: values.businessName,
+        city: values.city,
+        role: "seller",
+        status: "approved",
+      }),
+    }
+  );
+}
 export type SellerListing = {
   id: string;
   title: string;

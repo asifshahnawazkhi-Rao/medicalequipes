@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { saveSession, sendPasswordReset, signInWithPassword, signUpWithPassword } from "./auth";
-import { updateProfile } from "./supabaseData";
+import { initializeSellerProfile } from "./supabaseData";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -58,7 +58,7 @@ export default function AuthModal({
           });
 
       if (mode === "signup" && session.access_token && session.user?.id) {
-        await updateProfile(session, {
+        await initializeSellerProfile(session, {
           fullName: fullName.trim(),
           phone: phone.trim(),
           city: city.trim(),
