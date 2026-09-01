@@ -886,6 +886,7 @@ export type AdminSellerProfile = {
   role: string;
   status: string;
   visitingCardUrl: string;
+  createdAt: string;
 };
 
 export async function getPendingSellers(
@@ -896,7 +897,7 @@ export async function getPendingSellers(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url&status=eq.pending&order=created_at.asc`,
+    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url,created_at&status=eq.pending&order=created_at.asc`,
     session
   );
 
@@ -909,6 +910,7 @@ export async function getPendingSellers(
     role: String(row.role ?? ""),
     status: String(row.status ?? ""),
     visitingCardUrl: String(row.visiting_card_url ?? ""),
+    createdAt: String(row.created_at ?? ""),
   }));
 }
 
@@ -941,7 +943,7 @@ export async function getAdminSellers(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url&role=in.(seller,buyer)&order=created_at.desc`,
+    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url,created_at&role=in.(seller,buyer)&order=created_at.desc`,
     session
   );
 
@@ -956,6 +958,7 @@ export async function getAdminSellers(
     visitingCardUrl: String(
       row.visiting_card_url ?? ""
     ),
+    createdAt: String(row.created_at ?? ""),
   }));
 }
 
