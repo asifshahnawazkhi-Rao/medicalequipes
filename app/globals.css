@@ -2172,6 +2172,16 @@
   padding: 10px 14px;
   text-decoration: none;
 }
+.adminSellerDetailActions button {
+  border: 0;
+  border-radius: 10px;
+  background: var(--teal);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 11px 15px;
+}
+.adminRoleLabel { display: block; margin-bottom: 5px; text-transform: capitalize; }
 @media (max-width: 600px) {
   .adminSellerDetails { padding: 26px 20px; }
   .adminSellerDetailGrid { grid-template-columns: 1fr; }

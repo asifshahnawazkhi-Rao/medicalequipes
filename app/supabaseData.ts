@@ -941,7 +941,7 @@ export async function getAdminSellers(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url&role=eq.seller&order=created_at.desc`,
+    `/rest/v1/profiles?select=id,full_name,business_name,phone,city,role,status,visiting_card_url&role=in.(seller,buyer)&order=created_at.desc`,
     session
   );
 
@@ -957,6 +957,28 @@ export async function getAdminSellers(
       row.visiting_card_url ?? ""
     ),
   }));
+}
+
+export async function convertBuyerToApprovedSeller(
+  session: AuthSession,
+  userId: string
+) {
+  requireUserSession(session);
+
+  await supabaseFetch(
+    `/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        role: "seller",
+        status: "approved",
+      }),
+    }
+  );
 }
 
 export type AdminListing = {
