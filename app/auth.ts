@@ -79,7 +79,13 @@ export function signInWithPassword(
 
 export function signUpWithPassword(
   email: string,
-  password: string
+  password: string,
+  profile: {
+    fullName: string;
+    phone: string;
+    city: string;
+    businessName: string;
+  }
 ) {
   const redirectTo =
     typeof window !== "undefined"
@@ -91,8 +97,24 @@ export function signUpWithPassword(
     {
       email,
       password,
+      data: {
+        full_name: profile.fullName,
+        phone: profile.phone,
+        city: profile.city,
+        business_name: profile.businessName,
+        role: "seller",
+        status: "approved",
+      },
       options: {
         email_redirect_to: redirectTo,
+        data: {
+          full_name: profile.fullName,
+          phone: profile.phone,
+          city: profile.city,
+          business_name: profile.businessName,
+          role: "seller",
+          status: "approved",
+        },
       },
     }
   );
