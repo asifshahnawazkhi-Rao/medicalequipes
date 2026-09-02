@@ -24,5 +24,5 @@ on public.search_events for select
 to authenticated
 using (exists (
   select 1 from public.profiles
-  where profiles.id = auth.uid() and lower(profiles.role) = 'admin'
+  where profiles.id = auth.uid() and lower(profiles.role::text) = 'admin'
 ));
