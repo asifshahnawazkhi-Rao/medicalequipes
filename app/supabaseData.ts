@@ -1371,3 +1371,38 @@ export async function submitListingReport(
   );
 }
 
+
+export async function recordSearchEvent(query: string, resultCount: number, city: string, category: string) {
+  const normalized = query.trim().replace(/\s+/g, " ").slice(0, 120);
+  if (normalized.length < 2) return;
+  await supabaseFetch("/rest/v1/search_events", undefined, {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ query: normalized, result_count: Math.max(0, resultCount), city: city || null, category: category || null }),
+  });
+}
+
+export type SearchInsight = { query: string; searches: number; noResults: number; lastSearchedAt: string };
+
+export async function getAdminSearchInsights(session: AuthSession): Promise<SearchInsight[]> {
+  requireUserSession(session);
+  try {
+    const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+      "/rest/v1/search_events?select=query,result_count,created_at&order=created_at.desc&limit=2000",
+      session
+    );
+    const grouped = new Map<string, SearchInsight>();
+    for (const row of rows) {
+      const query = String(row.query ?? "").trim();
+      if (!query) continue;
+      const key = query.toLowerCase();
+      const current = grouped.get(key) ?? { query, searches: 0, noResults: 0, lastSearchedAt: String(row.created_at ?? "") };
+      current.searches += 1;
+      if (Number(row.result_count ?? 0) === 0) current.noResults += 1;
+      grouped.set(key, current);
+    }
+    return [...grouped.values()].sort((a, b) => b.searches - a.searches || b.noResults - a.noResults);
+  } catch {
+    return [];
+  }
+}

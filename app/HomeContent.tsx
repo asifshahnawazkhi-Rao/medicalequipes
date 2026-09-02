@@ -241,7 +241,17 @@ const cityOptions = useMemo(() => {
 }, [filtered, sortBy]);
 
   function goToSell() { window.location.assign("/sell"); }
-  function search(event?: FormEvent) { event?.preventDefault(); document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }); }
+  function search(event?: FormEvent, selectedTerm?: string) {
+    event?.preventDefault();
+    const term = (selectedTerm ?? query).trim();
+    document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+    if (term.length >= 2) {
+      const resultCount = marketListings.filter(([, title, cat, , listingCity, condition, , brand, model]) =>
+        `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`.toLowerCase().includes(term.toLowerCase())
+      ).length;
+      recordSearchEvent(term, resultCount, city, category).catch(() => undefined);
+    }
+  }
   function chooseCategory(name: string) { setCategory(name); setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 20); }
   async function toggleFavorite(listingId: string) {
   const session = getStoredSession();
@@ -418,7 +428,7 @@ const cityOptions = useMemo(() => {
     </select>
   </div>
 )}
-        <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term) => <button className={query === term ? "popularChip active" : "popularChip"} key={term} type="button" onClick={() => { setQuery(term); setTimeout(() => search(), 20); }}>{term}</button>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="monitorShell"><div className="deviceScreen monitorScreen"><div className="monitorTop"><span>ECG MONITOR</span><i>● LIVE</i></div><div className="monitorDisplay"><svg className="ecgWave" viewBox="0 0 560 120" role="img" aria-label="Live ECG waveform"><defs><pattern id="ecgGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.7" /></pattern></defs><rect width="560" height="120" fill="url(#ecgGrid)" /><polyline points="0,69 45,69 58,64 68,70 80,69 94,25 108,104 122,50 136,69 186,69 200,64 210,70 223,69 237,25 251,104 265,50 279,69 329,69 343,64 353,70 366,69 380,25 394,104 408,50 422,69 472,69 486,64 496,70 509,69 523,25 537,104 551,50 560,69" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="monitorVitals"><div><span>HR</span><b>78</b><small>BPM</small></div><div><span>SpO₂</span><b>98</b><small>%</small></div><div><span>NIBP</span><b>120/80</b><small>mmHg</small></div></div></div><div className="monitorBrand"><span>MEDICAL</span><strong>EQUIPES</strong></div></div><div className="monitorControls"><span /><span /><span /><span /><b /></div></div><div className="deviceStand"><span /><b /></div></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
+        <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term) => <button className={query === term ? "popularChip active" : "popularChip"} key={term} type="button" onClick={() => { setQuery(term); setTimeout(() => search(undefined, term), 20); }}>{term}</button>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="monitorShell"><div className="deviceScreen monitorScreen"><div className="monitorTop"><span>ECG MONITOR</span><i>● LIVE</i></div><div className="monitorDisplay"><svg className="ecgWave" viewBox="0 0 560 120" role="img" aria-label="Live ECG waveform"><defs><pattern id="ecgGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.7" /></pattern></defs><rect width="560" height="120" fill="url(#ecgGrid)" /><polyline points="0,69 45,69 58,64 68,70 80,69 94,25 108,104 122,50 136,69 186,69 200,64 210,70 223,69 237,25 251,104 265,50 279,69 329,69 343,64 353,70 366,69 380,25 394,104 408,50 422,69 472,69 486,64 496,70 509,69 523,25 537,104 551,50 560,69" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="monitorVitals"><div><span>HR</span><b>78</b><small>BPM</small></div><div><span>SpO₂</span><b>98</b><small>%</small></div><div><span>NIBP</span><b>120/80</b><small>mmHg</small></div></div></div><div className="monitorBrand"><span>MEDICAL</span><strong>EQUIPES</strong></div></div><div className="monitorControls"><span /><span /><span /><span /><b /></div></div><div className="deviceStand"><span /><b /></div></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
