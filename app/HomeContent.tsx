@@ -33,6 +33,17 @@ type Listing = [
 
 
 
+function categoryVisual(name: string, index: number) {
+  const value = name.toLowerCase();
+  if (/dental|dentist/.test(value)) return 1;
+  if (/diagnostic|imaging|ultrasound|ecg|x-ray|radiology/.test(value)) return 2;
+  if (/laboratory|lab|analy[sz]er|microscope/.test(value)) return 3;
+  if (/surgical|operation|operating|ot |theatre/.test(value)) return 4;
+  if (/emergency|critical|monitor|ventilator|icu|patient/.test(value)) return 5;
+  if (/part|accessor|consumable|gel|paper|probe|cable/.test(value)) return 6;
+  return (index % 6) + 1;
+}
+
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -415,23 +426,16 @@ const cityOptions = useMemo(() => {
   {categoryOptions.map((cat, index) => (
     <button
       type="button"
-      className={`category ${
-        category === cat.name ? "active" : ""
-      }`}
+      className={`category categoryVisual${categoryVisual(cat.name, index)} ${category === cat.name ? "active" : ""}`}
       key={cat.id}
       onClick={() => chooseCategory(cat.name)}
     >
-      <div className="catIcon">
-        {String(index + 1).padStart(2, "0")}
+      <div className="categoryOverlay" />
+      <div className="categoryContent">
+        <div className="catIcon">{String(index + 1).padStart(2, "0")}</div>
+        <h3>{cat.name}</h3>
+        <span>Explore →</span>
       </div>
-
-      <h3>{cat.name}</h3>
-
-      <p>
-        Browse available {cat.name.toLowerCase()} listings.
-      </p>
-
-      <span>Explore →</span>
     </button>
   ))}
 </div></section>

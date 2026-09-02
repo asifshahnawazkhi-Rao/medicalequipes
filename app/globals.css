@@ -2187,3 +2187,23 @@
   .adminSellerDetailGrid { grid-template-columns: 1fr; }
 }
 
+
+
+/* Compact, image-led category tiles */
+#categories .categoryGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+#categories .category { position: relative; min-height: 164px; overflow: hidden; border: 0; border-radius: 16px; padding: 0; background-image: url("/images/medical-category-sprite.png"); background-repeat: no-repeat; background-size: 300% 200%; color: #fff; text-align: left; box-shadow: 0 10px 24px rgba(15,50,62,.13); cursor: pointer; isolation: isolate; }
+#categories .categoryVisual1 { background-position: 0 0; }
+#categories .categoryVisual2 { background-position: 50% 0; }
+#categories .categoryVisual3 { background-position: 100% 0; }
+#categories .categoryVisual4 { background-position: 0 100%; }
+#categories .categoryVisual5 { background-position: 50% 100%; }
+#categories .categoryVisual6 { background-position: 100% 100%; }
+#categories .categoryOverlay { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg,rgba(3,24,31,.04) 18%,rgba(3,30,38,.88) 100%); transition: background .22s ease; }
+#categories .categoryContent { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; }
+#categories .catIcon { position: absolute; top: 12px; right: 12px; width: auto; height: auto; min-width: 30px; border: 1px solid rgba(255,255,255,.5); border-radius: 999px; padding: 5px 8px; background: rgba(6,55,65,.62); color: #fff; backdrop-filter: blur(6px); }
+#categories .category h3 { margin: 0 0 5px; color: #fff; font-size: 16px; line-height: 1.25; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+#categories .category span:not(.catIcon) { color: #bff8f3; font-size: 11px; }
+#categories .category:hover,#categories .category.active { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(15,50,62,.22); outline: 2px solid #21aab4; outline-offset: 2px; }
+#categories .category:hover .categoryOverlay,#categories .category.active .categoryOverlay { background: linear-gradient(180deg,rgba(3,24,31,0) 10%,rgba(3,30,38,.94) 100%); }
+@media (max-width:950px) { #categories .categoryGrid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width:700px) { #categories .categoryGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; } #categories .category { min-height: 148px; border-radius: 13px; } #categories .categoryContent { padding: 13px; } #categories .category h3 { font-size: 14px; } }
