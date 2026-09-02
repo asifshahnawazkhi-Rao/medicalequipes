@@ -10,6 +10,7 @@ import {
   getFavoriteListingIds,
   getPublicListings,
   getPublicSellers,
+  recordSearchEvent,
   removeFavorite,
   type PublicSeller,
   type CategoryOption,
