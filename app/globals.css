@@ -2227,3 +2227,9 @@
 #sellers .sellerActions button:last-child { background:#fff; color:#087f8c; }
 #sellers .sellerActions button:hover { background:#dffafa; color:#076a75; }
 @media (max-width:700px) { #sellers .seller { min-height:194px; padding:20px; } #sellers .avatar { width:58px; height:58px; font-size:24px; } }
+
+/* Pakistan phone prefix field */
+.sellForm .phoneField { display:flex; align-items:stretch; overflow:hidden; border:1px solid #cbd5e1; border-radius:8px; background:#fff; }
+.sellForm .phonePrefix { display:grid; place-items:center; min-width:58px; border-right:1px solid #d9e2e8; background:#e9f7f8; color:#087f8c; font-weight:900; }
+.sellForm .phoneField input { border:0; border-radius:0; outline:0; }
+.sellForm .phoneField:focus-within { border-color:#087f8c; box-shadow:0 0 0 3px rgba(8,127,140,.12); }

@@ -177,7 +177,7 @@ setExisting(payload, columns, listingFields.category, values.categoryId);
   setExisting(payload, columns, listingFields.city, values.city.trim());
   setExisting(payload, columns, listingFields.description, values.description.trim());
   setExisting(payload, columns, listingFields.contactName, values.contactName?.trim());
-  setExisting(payload, columns, listingFields.contactEmail, values.contactEmail?.trim() || user.email);
+  setExisting(payload, columns, listingFields.contactEmail, values.contactEmail?.trim());
   setExisting(payload, columns, listingFields.contactPhone, values.contactPhone?.trim());
   setExisting(payload, columns, listingFields.status, "active");
 
