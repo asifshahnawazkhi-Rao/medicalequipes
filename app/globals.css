@@ -2233,3 +2233,9 @@
 .sellForm .phonePrefix { display:grid; place-items:center; min-width:58px; border-right:1px solid #d9e2e8; background:#e9f7f8; color:#087f8c; font-weight:900; }
 .sellForm .phoneField input { border:0; border-radius:0; outline:0; }
 .sellForm .phoneField:focus-within { border-color:#087f8c; box-shadow:0 0 0 3px rgba(8,127,140,.12); }
+
+/* Prominent admin Supabase backup action */
+.adminHeroActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.adminBackupButton { border:1px solid #fff; border-radius:10px; background:#fff; padding:11px 15px; color:#087f8c; font:inherit; font-weight:900; cursor:pointer; box-shadow:0 8px 22px #002d3540; }
+.adminBackupButton:hover { background:#e9fbfc; }
+@media (max-width:850px) { .adminHeroActions { width:100%; justify-content:flex-start; } }
