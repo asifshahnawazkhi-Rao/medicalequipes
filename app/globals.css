@@ -2397,5 +2397,8 @@
 .autoCategoryResult { align-self: start; display: grid; gap: 5px; min-height: 76px; padding: 13px 15px; border: 1px solid #8fd0c0; border-radius: 9px; background: #eafaf4; }
 .autoCategoryResult span { color: #58727b; font-size: 12px; font-weight: 700; }
 .autoCategoryResult strong { color: #087f6b; font-size: 15px; }
+.autoCategoryResult.waiting { border-color: #e3c77b; background: #fff9e8; }
+.autoCategoryResult.waiting strong { color: #875f1a; }
+.categoryChoice { align-self: start; }
 .autoCategoryFallback small { color: #875f1a; font-weight: 500; }
 
