@@ -7,10 +7,12 @@ import {
   createListing,
   getCategories,
   getProfile,
+  getManagedSellers,
   saveListingImages,
   updateProfile,
   uploadListingImage,
   type CategoryOption,
+  type ManagedSeller,
 } from "../supabaseData";
 
 const conditions = ["New", "Like New", "Used", "Refurbished", "Demo"];
@@ -78,6 +80,9 @@ const [sellerApproved, setSellerApproved] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [priceOnRequest, setPriceOnRequest] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [managedSellers, setManagedSellers] = useState<ManagedSeller[]>([]);
+  const [managedSellerId, setManagedSellerId] = useState("");
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,7 +121,7 @@ const [sellerApproved, setSellerApproved] = useState(false);
         return;
       }
 
-      if (profile.status.toLowerCase() !== "approved" || profile.role.toLowerCase() !== "seller") {
+      if (profile.role.toLowerCase() !== "admin" && (profile.status.toLowerCase() !== "approved" || profile.role.toLowerCase() !== "seller")) {
         await updateProfile(authenticatedSession, {
           fullName: profile.fullName,
           phone: profile.phone,
@@ -127,6 +132,9 @@ const [sellerApproved, setSellerApproved] = useState(false);
       }
 
       setSellerApproved(true);
+      const admin = profile.role.toLowerCase() === "admin";
+      setIsAdmin(admin);
+      if (admin) setManagedSellers(await getManagedSellers(authenticatedSession));
 
       setSession(authenticatedSession);
 
@@ -433,7 +441,8 @@ if (!sellerApproved) {
       <section className="sellHero"><div className="container"><span className="eyebrow">SELLER MARKETPLACE</span><h1>List medical equipment professionally</h1><p>Create a verified marketplace listing with specifications, pricing, location, and equipment photos.</p></div></section>
       <section className="container sellFormWrap">
         <form className="sellForm" onSubmit={submit}>
-          <div className="formSection"><h2>Equipment details</h2><p className="helpText">Listing title will be created automatically from Brand + Model.</p><div className="formGrid"><label>Category *<select name="categoryId" required><option value="">Select category</option>{categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Brand *<input name="brand" required placeholder="GE, Mindray, Dräger" /></label><label>Model *<input name="model" required placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR){!priceOnRequest && " *"}<input name="price" type="number" min="1" step="1" required={!priceOnRequest} disabled={priceOnRequest} placeholder={priceOnRequest ? "Ask for Price" : "1250000"} /><span className="priceRequestOption"><input type="checkbox" checked={priceOnRequest} onChange={(event) => setPriceOnRequest(event.target.checked)} /> Ask for Price</span></label><label>Location / city *<input name="city" required placeholder="Karachi" /></label><label>Contact name<input name="contactName" placeholder="Seller or business name" /></label><label>Contact phone *<span className="phoneField"><span className="phonePrefix">+92</span><input name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" maxLength={11} placeholder="03XXXXXXXXX" title="Enter 11 digits starting with 03" /></span></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div><div className="formSection"><h2>Equipment photos</h2><p className="helpText">Add 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoPicker"><button className="photoPickerButton" type="button" onClick={() => setPhotoPickerOpen((open) => !open)}>Choose Files <span>▾</span></button>{photoPickerOpen && <div className="photoPickerMenu"><button type="button" onClick={() => { setPhotoPickerOpen(false); cameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button><button type="button" onClick={() => { setPhotoPickerOpen(false); galleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select one or more existing photos</small></button></div>}<input ref={cameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /><input ref={galleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" multiple onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
+          <div className="formSection"><h2>Equipment details</h2><p className="helpText">Listing title will be created automatically from Brand + Model.</p>{isAdmin && <label className="managedSellerPicker">Post on behalf of seller<select name="managedSellerId" value={managedSellerId} onChange={(event) => setManagedSellerId(event.target.value)}><option value="">My admin account</option>{managedSellers.map((seller) => <option key={seller.id} value={seller.id}>{seller.companyName} — {seller.city}</option>)}</select><small>Select a seller created in Admin Dashboard.</small></label>}<div className="formGrid"><label>Category *<select name="categoryId" required><option value="">Select category</option>{categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Brand *<input name="brand" required placeholder="GE, Mindray, Dräger" /></label><label>Model *<input name="model" required placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR){!priceOnRequest && " *"}<input name="price" type="number" min="1" step="1" required={!priceOnRequest} disabled={priceOnRequest} placeholder={priceOnRequest ? "Ask for Price" : "1250000"} /><span className="priceRequestOption"><input type="checkbox" checked={priceOnRequest} onChange={(event) => setPriceOnRequest(event.target.checked)} /> Ask for Price</span></label><label>Location / city *<input key={`city-${managedSellerId}`} name="city" required defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.city || ""} placeholder="Karachi" /></label><label>Contact name<input key={`name-${managedSellerId}`} name="contactName" defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.contactPerson || managedSellers.find((seller) => seller.id === managedSellerId)?.companyName || ""} placeholder="Seller or business name" /></label><label>Contact phone *<span className="phoneField"><span className="phonePrefix">+92</span><input key={`phone-${managedSellerId}`} name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" maxLength={11} defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.phone.replace(/^\+92/, "0") || ""} placeholder="03XXXXXXXXX" title="Enter 11 digits starting with 03" /></span></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
+          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Add 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoPicker"><button className="photoPickerButton" type="button" onClick={() => setPhotoPickerOpen((open) => !open)}>Choose Files <span>▾</span></button>{photoPickerOpen && <div className="photoPickerMenu"><button type="button" onClick={() => { setPhotoPickerOpen(false); cameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button><button type="button" onClick={() => { setPhotoPickerOpen(false); galleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select one or more existing photos</small></button></div>}<input ref={cameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /><input ref={galleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" multiple onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
           {progress > 0 && <div className="progress"><span style={{ width: `${progress}%` }} /></div>}
           {message && <div className="authMessage" role="status">{message}</div>}
           {error && <div className="formError" role="alert">{error}</div>}

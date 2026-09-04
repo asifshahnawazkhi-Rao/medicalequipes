@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { clearSession, getStoredSession } from "../auth";
 import {
   convertBuyerToApprovedSeller, getAdminListings, getAdminReports, getAdminSellers, getProfile,
   getVisitingCardSignedUrl, updateAdminListingStatus, updateAdminReportStatus,
-  updateSellerApproval, getAdminSearchInsights, type SearchInsight, type AdminListing, type AdminReport, type AdminSellerProfile,
+  updateSellerApproval, getAdminSearchInsights, getManagedSellers, createManagedSeller, type ManagedSeller, type SearchInsight, type AdminListing, type AdminReport, type AdminSellerProfile,
 } from "../supabaseData";
 
-type Section = "overview" | "sellers" | "listings" | "reports" | "searches" | "backups";
+type Section = "overview" | "sellers" | "managed" | "listings" | "reports" | "searches" | "backups";
 type SellerWithCard = AdminSellerProfile & { cardUrl?: string };
 
 export default function AdminPage() {
@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [listings, setListings] = useState<AdminListing[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [searchInsights, setSearchInsights] = useState<SearchInsight[]>([]);
+  const [managedSellers, setManagedSellers] = useState<ManagedSeller[]>([]);
   const [sellerFilter, setSellerFilter] = useState("all");
   const [listingFilter, setListingFilter] = useState("all");
   const [reportFilter, setReportFilter] = useState("pending");
@@ -34,8 +35,8 @@ export default function AdminPage() {
       try {
         const profile = await getProfile(session!);
         if (!profile || profile.role.toLowerCase() !== "admin") { window.location.replace("/dashboard"); return; }
-        const [sellerRows, listingRows, reportRows, searchRows] = await Promise.all([
-          getAdminSellers(session!), getAdminListings(session!), getAdminReports(session!), getAdminSearchInsights(session!),
+        const [sellerRows, listingRows, reportRows, searchRows, managedRows] = await Promise.all([
+          getAdminSellers(session!), getAdminListings(session!), getAdminReports(session!), getAdminSearchInsights(session!), getManagedSellers(session!),
         ]);
         const cards = await Promise.all(sellerRows.map(async (seller) => {
           if (!seller.visitingCardUrl) return seller;
@@ -46,7 +47,7 @@ export default function AdminPage() {
           const seller = sellerRows.find((item) => item.id === listing.sellerId);
           return { ...listing, sellerName: seller?.fullName ?? "", sellerBusinessName: seller?.businessName ?? "" };
         });
-        setSellers(cards); setListings(listingsWithSellers); setReports(reportRows); setSearchInsights(searchRows);
+        setSellers(cards); setListings(listingsWithSellers); setReports(reportRows); setSearchInsights(searchRows); setManagedSellers(managedRows);
       } catch (err) { setError(err instanceof Error ? err.message : "Could not load admin dashboard."); }
       finally { setLoading(false); }
     }
@@ -103,6 +104,21 @@ export default function AdminPage() {
   }
   function logout() { clearSession(); window.location.assign("/"); }
 
+  async function addManagedSeller(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const session = getStoredSession(); if (!session) return;
+    const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    if (!values.permissionConfirmed) { setError("Confirm that the seller allowed you to publish their information and products."); return; }
+    try {
+      setBusyId("managed-new"); setError("");
+      const seller = await createManagedSeller(session, values);
+      setManagedSellers((rows) => [...rows, seller].sort((a, b) => a.companyName.localeCompare(b.companyName)));
+      form.reset(); setMessage("Manual seller created. You can now select this seller on the Sell Listing page.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not create seller."); }
+    finally { setBusyId(""); }
+  }
+
   function sellerDateLabel(seller: SellerWithCard) {
     if (!seller.createdAt) return <span className="adminDateCell">—</span>;
     const label = seller.status === "approved" ? "Approved" : "Requested";
@@ -142,12 +158,14 @@ export default function AdminPage() {
     <header className="header"><div className="container nav"><a className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="/">Marketplace</a><a href="/dashboard">Seller Dashboard</a><a href="/profile">Profile</a></nav><button className="adminLogout" type="button" onClick={logout}>Logout</button></div></header>
     <div className="container adminDashboardContainer">
       <section className="adminHero"><div><span className="eyebrow">ADMIN CONTROL CENTER</span><h1>Marketplace Administration</h1><p>Manage sellers, listings and marketplace safety from one place.</p></div><div className="adminHeroActions"><button type="button" className="adminBackupButton" onClick={downloadMarketplaceBackup}>↓ Supabase Backup</button><div className="adminHeroBadge">Secure Admin Area</div></div></section>
-      <nav className="adminTabs">{(["overview", "sellers", "listings", "reports", "searches", "backups"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} type="button" onClick={() => { setSection(item); setSearch(""); }}>{item === "reports" && stats.pendingReports ? `Reports (${stats.pendingReports})` : item === "searches" ? "Search Insights" : item}</button>)}</nav>
+      <nav className="adminTabs">{(["overview", "sellers", "managed", "listings", "reports", "searches", "backups"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} type="button" onClick={() => { setSection(item); setSearch(""); }}>{item === "reports" && stats.pendingReports ? `Reports (${stats.pendingReports})` : item === "searches" ? "Search Insights" : item === "managed" ? "Manual Sellers" : item}</button>)}</nav>
       {message && <div className="authMessage adminMessage">{message}</div>}{error && <div className="formError adminMessage">{error}</div>}
 
       {section === "overview" && <><section className="adminStats"><div><span>Total Sellers</span><strong>{stats.sellers}</strong></div><div><span>Pending Sellers</span><strong>{stats.pendingSellers}</strong></div><div><span>Total Listings</span><strong>{stats.listings}</strong></div><div><span>Active Listings</span><strong>{stats.activeListings}</strong></div><div><span>Pending Reports</span><strong>{stats.pendingReports}</strong></div><div><span>Search Terms</span><strong>{searchInsights.length}</strong></div></section><section className="adminQuickGrid"><button onClick={() => setSection("sellers")}><span>Seller Approvals</span><strong>{stats.pendingSellers} pending</strong><small>Review profiles and verification cards.</small></button><button onClick={() => setSection("listings")}><span>Listing Control</span><strong>{stats.listings} listings</strong><small>Control listing availability and status.</small></button><button onClick={() => setSection("reports")}><span>Safety Reports</span><strong>{stats.pendingReports} pending</strong><small>Review reports submitted by users.</small></button><button onClick={() => setSection("searches")}><span>Search Insights</span><strong>{searchInsights.reduce((sum, item) => sum + item.searches, 0)} searches</strong><small>See products visitors are looking for.</small></button><button onClick={() => setSection("backups")}><span>Backup My Data</span><strong>Secure export</strong><small>Download a copy of marketplace development data.</small></button></section></>}
 
       {section === "searches" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Search Insights</h2><p>Products and equipment visitors search for on MedicalEquipes.</p></div></div><div className="adminTableWrap"><table className="adminTable adminSearchTable"><thead><tr><th>Search term</th><th>Total searches</th><th>No-result searches</th><th>Last searched</th><th>Opportunity</th></tr></thead><tbody>{searchInsights.map((item) => <tr key={item.query.toLowerCase()}><td><strong>{item.query}</strong></td><td>{item.searches}</td><td>{item.noResults}</td><td>{item.lastSearchedAt ? new Date(item.lastSearchedAt).toLocaleString("en-PK") : "—"}</td><td>{item.noResults > 0 ? <span className="adminSearchOpportunity">Add this product</span> : <span className="adminStatus active">Results available</span>}</td></tr>)}</tbody></table>{!searchInsights.length && <div className="adminEmpty"><strong>No search data yet.</strong><p>Run the supplied Supabase search-insights SQL once, then visitor searches will appear here.</p></div>}</div></section>}
+
+      {section === "managed" && <section className="adminPanel"><div className="adminPanelHead"><div><h2>Manual Sellers</h2><p>Create a seller profile only when you have permission to republish their information and products.</p></div><a className="adminManagedSellLink" href="/sell">+ Post Listing</a></div><form className="adminManagedSellerForm" onSubmit={addManagedSeller}><label>Company name *<input name="companyName" required /></label><label>Contact person<input name="contactPerson" /></label><label>Phone / WhatsApp *<input name="phone" required placeholder="+923001234567" /></label><label>City *<input name="city" required /></label><label>Seller website<input name="website" type="url" placeholder="https://..." /></label><label>Source product/page URL<input name="sourceUrl" type="url" placeholder="https://..." /></label><label className="adminPermissionCheck"><input name="permissionConfirmed" type="checkbox" value="yes" required /> Seller has allowed MedicalEquipes to publish this information and their products.</label><button type="submit" disabled={busyId === "managed-new"}>{busyId === "managed-new" ? "Creating..." : "+ Create Manual Seller"}</button></form><div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Company</th><th>Contact</th><th>City</th><th>Website</th><th>Created</th></tr></thead><tbody>{managedSellers.map((seller) => <tr key={seller.id}><td><strong>{seller.companyName}</strong></td><td>{seller.contactPerson || "—"}<small>{seller.phone}</small></td><td>{seller.city}</td><td>{seller.website ? <a href={seller.website} target="_blank" rel="noreferrer">Open website</a> : "—"}</td><td>{seller.createdAt ? new Date(seller.createdAt).toLocaleDateString("en-PK") : "—"}</td></tr>)}</tbody></table>{!managedSellers.length && <div className="adminEmpty">No manual sellers yet.</div>}</div></section>}
 
       {section === "backups" && <section className="adminPanel adminBackupPanel"><div className="adminPanelHead"><div><h2>Supabase Backup</h2><p>Download a dated JSON copy of the MedicalEquipes data stored in Supabase.</p></div></div><div className="adminBackupGrid"><article><span className="adminBackupIcon">↓</span><div><h3>Supabase Data Backup</h3><p>Includes seller profiles, equipment listings, statuses and safety reports currently available to the admin account.</p><ul><li>{stats.sellers} seller records</li><li>{stats.listings} listing records</li><li>{reports.length} report records</li></ul><button type="button" onClick={downloadMarketplaceBackup}>Download Supabase Backup</button><small>Save this downloaded file in a secure drive. It is separate from your website code backup.</small></div></article><article><span className="adminBackupIcon">✓</span><div><h3>Development Source Backup</h3><p>Your website source code and development history are stored separately in the connected GitHub repository.</p><a href="https://github.com/asifshahnawazkhi-Rao/medicalequipes" target="_blank" rel="noreferrer">Open GitHub Repository</a><small>Passwords, secret keys, sessions, uploaded image files and access tokens are never included in this JSON download.</small></div></article></div></section>}
 

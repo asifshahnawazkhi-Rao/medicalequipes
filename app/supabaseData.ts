@@ -50,6 +50,7 @@ const listingFields = {
   contactName: ["contact_name"],
   contactEmail: ["contact_email", "email"],
   contactPhone: ["contact_phone", "phone", "phone_number"],
+  managedSellerId: ["managed_seller_id"],
   status: ["status"],
 } as const;
 
@@ -168,6 +169,7 @@ export async function createListing(session: AuthSession, values: Record<string,
 
   setExisting(payload, columns, listingFields.userId, user.id);
 payload.seller_id = user.id;
+  setExisting(payload, columns, listingFields.managedSellerId, values.managedSellerId);
 setExisting(payload, columns, listingFields.category, values.categoryId);
   setExisting(payload, columns, listingFields.title, values.title.trim());
   setExisting(payload, columns, listingFields.brand, values.brand?.trim());
@@ -453,7 +455,7 @@ export async function getListingById(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/listings?select=*,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(
+    `/rest/v1/listings?select=*,categories(name),listing_images(image_url,sort_order),managed_sellers(company_name,contact_person,phone,city,website,status)&id=eq.${encodeURIComponent(
       id
     )}&limit=1`,
     session
@@ -464,6 +466,7 @@ export async function getListingById(
   if (!row) return null;
 
   const sellerId = String(row.seller_id ?? "");
+  const managedSeller = row.managed_sellers as Record<string, unknown> | null;
 
   let sellerProfile: Record<string, unknown> | null = null;
 
@@ -548,6 +551,7 @@ export async function getListingById(
     contactName: String(
       row.contact_name ??
         row.seller_name ??
+        managedSeller?.contact_person ??
         sellerProfile?.full_name ??
         ""
     ),
@@ -562,6 +566,7 @@ export async function getListingById(
       row.contact_phone ??
         row.phone ??
         row.phone_number ??
+        managedSeller?.phone ??
         sellerProfile?.phone ??
         ""
     ),
@@ -569,28 +574,28 @@ export async function getListingById(
     sellerId,
 
     sellerFullName: String(
-      sellerProfile?.full_name ?? ""
+      managedSeller?.contact_person ?? sellerProfile?.full_name ?? ""
     ),
 
     sellerBusinessName: String(
-      sellerProfile?.business_name ?? ""
+      managedSeller?.company_name ?? sellerProfile?.business_name ?? ""
     ),
 
     sellerCity: String(
-      sellerProfile?.city ?? ""
+      managedSeller?.city ?? sellerProfile?.city ?? ""
     ),
 
     sellerPhone: String(
-      sellerProfile?.phone ?? ""
+      managedSeller?.phone ?? sellerProfile?.phone ?? ""
     ),
 
     sellerStatus: String(
-      sellerProfile?.status ?? ""
+      managedSeller?.status ?? sellerProfile?.status ?? ""
     ),
 
-    sellerVisitingCardUrl: String(
-      sellerProfile?.visiting_card_url ?? ""
-    ),
+    sellerVisitingCardUrl: managedSeller
+      ? ""
+      : String(sellerProfile?.visiting_card_url ?? ""),
 
     status: String(row.status ?? "active"),
 
@@ -1015,6 +1020,75 @@ export async function updateAdminReportStatus(session: AuthSession, reportId: st
   requireUserSession(session);
   await supabaseFetch(`/rest/v1/reports?id=eq.${encodeURIComponent(reportId)}`, session, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status }) });
 }
+
+export async function recordSearchEvent(query: string, resultCount: number, city: string, category: string) {
+  const normalized = query.trim().replace(/\s+/g, " ").slice(0, 120);
+  if (normalized.length < 2) return;
+  await supabaseFetch("/rest/v1/search_events", undefined, {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ query: normalized, result_count: Math.max(0, resultCount), city: city || null, category: category || null }),
+  });
+}
+
+export type SearchInsight = { query: string; searches: number; noResults: number; lastSearchedAt: string };
+
+export async function getAdminSearchInsights(session: AuthSession): Promise<SearchInsight[]> {
+  requireUserSession(session);
+  try {
+    const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+      "/rest/v1/search_events?select=query,result_count,created_at&order=created_at.desc&limit=2000",
+      session
+    );
+    const grouped = new Map<string, SearchInsight>();
+    for (const row of rows) {
+      const query = String(row.query ?? "").trim();
+      if (!query) continue;
+      const key = query.toLowerCase();
+      const current = grouped.get(key) ?? { query, searches: 0, noResults: 0, lastSearchedAt: String(row.created_at ?? "") };
+      current.searches += 1;
+      if (Number(row.result_count ?? 0) === 0) current.noResults += 1;
+      grouped.set(key, current);
+    }
+    return [...grouped.values()].sort((a, b) => b.searches - a.searches || b.noResults - a.noResults);
+  } catch {
+    return [];
+  }
+}
+
+export type ManagedSeller = {
+  id: string; companyName: string; contactPerson: string; phone: string;
+  city: string; website: string; sourceUrl: string; status: string; createdAt: string;
+};
+
+export async function getManagedSellers(session: AuthSession): Promise<ManagedSeller[]> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    "/rest/v1/managed_sellers?select=id,company_name,contact_person,phone,city,website,source_url,status,created_at&order=company_name.asc",
+    session
+  );
+  return rows.map((row) => ({
+    id: String(row.id ?? ""), companyName: String(row.company_name ?? ""),
+    contactPerson: String(row.contact_person ?? ""), phone: String(row.phone ?? ""),
+    city: String(row.city ?? ""), website: String(row.website ?? ""),
+    sourceUrl: String(row.source_url ?? ""), status: String(row.status ?? "active"),
+    createdAt: String(row.created_at ?? ""),
+  }));
+}
+
+export async function createManagedSeller(session: AuthSession, values: Record<string, string>): Promise<ManagedSeller> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/managed_sellers?select=*", session, {
+    method: "POST", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      company_name: values.companyName.trim(), contact_person: values.contactPerson.trim(),
+      phone: values.phone.trim(), city: values.city.trim(), website: values.website?.trim() || null,
+      source_url: values.sourceUrl?.trim() || null, created_by: session.user!.id,
+    }),
+  });
+  const row = rows[0];
+  return { id: String(row.id), companyName: String(row.company_name), contactPerson: String(row.contact_person ?? ""), phone: String(row.phone), city: String(row.city), website: String(row.website ?? ""), sourceUrl: String(row.source_url ?? ""), status: String(row.status ?? "active"), createdAt: String(row.created_at ?? "") };
+}
 export async function getFavoriteListingIds(
   session: AuthSession
 ): Promise<string[]> {
@@ -1371,38 +1445,3 @@ export async function submitListingReport(
   );
 }
 
-
-export async function recordSearchEvent(query: string, resultCount: number, city: string, category: string) {
-  const normalized = query.trim().replace(/\s+/g, " ").slice(0, 120);
-  if (normalized.length < 2) return;
-  await supabaseFetch("/rest/v1/search_events", undefined, {
-    method: "POST",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ query: normalized, result_count: Math.max(0, resultCount), city: city || null, category: category || null }),
-  });
-}
-
-export type SearchInsight = { query: string; searches: number; noResults: number; lastSearchedAt: string };
-
-export async function getAdminSearchInsights(session: AuthSession): Promise<SearchInsight[]> {
-  requireUserSession(session);
-  try {
-    const rows = await supabaseFetch<Array<Record<string, unknown>>>(
-      "/rest/v1/search_events?select=query,result_count,created_at&order=created_at.desc&limit=2000",
-      session
-    );
-    const grouped = new Map<string, SearchInsight>();
-    for (const row of rows) {
-      const query = String(row.query ?? "").trim();
-      if (!query) continue;
-      const key = query.toLowerCase();
-      const current = grouped.get(key) ?? { query, searches: 0, noResults: 0, lastSearchedAt: String(row.created_at ?? "") };
-      current.searches += 1;
-      if (Number(row.result_count ?? 0) === 0) current.noResults += 1;
-      grouped.set(key, current);
-    }
-    return [...grouped.values()].sort((a, b) => b.searches - a.searches || b.noResults - a.noResults);
-  } catch {
-    return [];
-  }
-}
