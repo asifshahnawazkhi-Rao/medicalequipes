@@ -10,12 +10,23 @@ type ListingRow = {
   city?: string | null;
   condition?: string | null;
   description?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
   categories?: { name?: string | null } | null;
+  managed_sellers?: {
+    company_name?: string | null;
+    contact_person?: string | null;
+    phone?: string | null;
+  } | null;
   listing_images?: Array<{ image_url?: string | null; sort_order?: number | null }>;
 };
 
 function facebookCaption(listing: ListingRow, updated = false) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://medicalequipes.com").replace(/\/$/, "");
+  const sellerName = listing.managed_sellers?.company_name
+    || listing.managed_sellers?.contact_person
+    || listing.contact_name;
+  const sellerContact = listing.managed_sellers?.phone || listing.contact_phone;
   const details = [
     listing.categories?.name,
     listing.brand && `Brand: ${listing.brand}`,
@@ -25,6 +36,8 @@ function facebookCaption(listing: ListingRow, updated = false) {
     listing.price != null && (Number(listing.price) > 0
       ? `Price: PKR ${Number(listing.price).toLocaleString("en-PK")}`
       : "Price: Ask for Price"),
+    sellerName && `Seller: ${sellerName}`,
+    sellerContact && `Seller Contact / WhatsApp: ${sellerContact}`,
   ].filter(Boolean);
 
   return [
@@ -142,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     const listingResponse = await fetch(
-      `${url}/rest/v1/listings?select=id,title,brand,model,price,city,condition,description,categories(name),listing_images(image_url,sort_order)&id=eq.${encodeURIComponent(listingId)}&seller_id=eq.${encodeURIComponent(user.id)}&status=eq.active&limit=1`,
+      `${url}/rest/v1/listings?select=id,title,brand,model,price,city,condition,description,contact_name,contact_phone,categories(name),listing_images(image_url,sort_order),managed_sellers(company_name,contact_person,phone)&id=eq.${encodeURIComponent(listingId)}&seller_id=eq.${encodeURIComponent(user.id)}&status=eq.active&limit=1`,
       { headers: authHeaders, cache: "no-store" }
     );
     const listings = await listingResponse.json().catch(() => []);
