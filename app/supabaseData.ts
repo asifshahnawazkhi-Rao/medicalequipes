@@ -2,6 +2,19 @@ import { AuthSession, getSupabaseConfig } from "./auth";
 
 export type CategoryOption = { id: string; name: string };
 
+export type Requirement = {
+  id: string;
+  requiredItem: string;
+  equipmentModel: string;
+  acceptableCondition: "New" | "Used" | "Refurbished" | "Any";
+  details: string;
+  posterName: string;
+  posterCity: string;
+  status: "open" | "fulfilled" | "closed";
+  createdAt: string;
+  expiresAt: string;
+};
+
 type ListingImageUpload = { path: string; publicUrl: string };
 
 export async function getProfile(session: AuthSession) {
@@ -190,6 +203,79 @@ setExisting(payload, columns, listingFields.category, values.categoryId);
   });
 
   return rows[0];
+}
+
+function mapRequirement(row: Record<string, unknown>): Requirement {
+  return {
+    id: String(row.id ?? ""),
+    requiredItem: String(row.required_item ?? ""),
+    equipmentModel: String(row.equipment_model ?? ""),
+    acceptableCondition: String(row.acceptable_condition ?? "Any") as Requirement["acceptableCondition"],
+    details: String(row.details ?? ""),
+    posterName: String(row.poster_name ?? "Marketplace Buyer"),
+    posterCity: String(row.poster_city ?? ""),
+    status: String(row.status ?? "open") as Requirement["status"],
+    createdAt: String(row.created_at ?? ""),
+    expiresAt: String(row.expires_at ?? ""),
+  };
+}
+
+export async function createRequirement(session: AuthSession, values: Record<string, string>) {
+  requireUserSession(session);
+  const profile = await getProfile(session);
+  const posterName = profile?.businessName || profile?.fullName || session.user?.email || "Marketplace Buyer";
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    "/rest/v1/requirements?select=*",
+    session,
+    {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        user_id: session.user!.id,
+        required_item: values.requiredItem.trim(),
+        equipment_model: values.equipmentModel.trim(),
+        acceptable_condition: values.acceptableCondition,
+        details: values.details.trim(),
+        poster_name: posterName,
+        poster_city: profile?.city || null,
+      }),
+    }
+  );
+  return mapRequirement(rows[0]);
+}
+
+export async function getPublicRequirements(): Promise<Requirement[]> {
+  const now = new Date().toISOString();
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/requirements?select=*&status=eq.open&expires_at=gt.${encodeURIComponent(now)}&order=created_at.desc&limit=6`
+  );
+  return rows.map(mapRequirement);
+}
+
+export async function getMyRequirements(session: AuthSession): Promise<Requirement[]> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+    `/rest/v1/requirements?select=*&user_id=eq.${encodeURIComponent(session.user!.id)}&order=created_at.desc`,
+    session
+  );
+  return rows.map(mapRequirement);
+}
+
+export async function updateRequirementStatus(
+  session: AuthSession,
+  id: string,
+  status: Requirement["status"]
+) {
+  requireUserSession(session);
+  await supabaseFetch(
+    `/rest/v1/requirements?id=eq.${encodeURIComponent(id)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status }),
+    }
+  );
 }
 export type PublicListing = {
   id: string;
