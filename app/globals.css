@@ -2413,7 +2413,8 @@
 .requirementForm label:last-of-type { grid-column: 1 / -1; }
 .requirementForm input, .requirementForm select, .requirementForm textarea { width: 100%; border: 1px solid #c8d9de; border-radius: 10px; padding: 13px 14px; background: #fff; color: #10233d; font: inherit; }
 .requirementForm textarea { resize: vertical; }
-.requirementForm .formError, .requirementForm > button { grid-column: 1 / -1; }
+.requirementForm .formError, .requirementForm .formMessage, .requirementForm > button { grid-column: 1 / -1; }
+.requirementForm .formMessage { border-radius: 8px; padding: 10px 12px; background: #e9f8f7; color: #08756f; font-size: 13px; font-weight: 700; }
 .requirementsSection { background: #f2f8f8; }
 .requirementGrid, .dashboardRequirementGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .requirementCard { display: flex; flex-direction: column; min-height: 330px; padding: 23px; border: 1px solid #d5e4e7; border-radius: 18px; background: #fff; box-shadow: 0 12px 30px rgba(16,35,61,.07); }
@@ -2445,7 +2446,7 @@
 @media (max-width: 900px) { .requirementGrid, .dashboardRequirementGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 650px) {
   .requirementForm, .requirementGrid, .dashboardRequirementGrid { grid-template-columns: 1fr; }
-  .requirementForm label:last-of-type, .requirementForm .formError, .requirementForm > button { grid-column: 1; }
+  .requirementForm label:last-of-type, .requirementForm .formError, .requirementForm .formMessage, .requirementForm > button { grid-column: 1; }
   .requirementForm { padding: 22px 18px; }
   .dashboardRequirements { padding: 20px 15px; }
   .dashboardSectionHead { align-items: flex-start; flex-direction: column; }
