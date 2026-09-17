@@ -11,6 +11,9 @@ import {
   getSellerListingAnalytics,
   ListingAnalytics,
   getProfile,
+  getMyRequirements,
+  updateRequirementStatus,
+  type Requirement,
 } from "../supabaseData";
 
 type ListingFilter =
@@ -30,6 +33,7 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState<
   ListingAnalytics[]
 >([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
 
   useEffect(() => {
   const session = getStoredSession();
@@ -45,16 +49,18 @@ export default function Dashboard() {
 
   async function loadDashboard() {
     try {
-      const [sellerListings, analyticsData, profile] =
+      const [sellerListings, analyticsData, profile, buyerRequirements] =
         await Promise.all([
           getSellerListings(validSession),
           getSellerListingAnalytics(validSession),
           getProfile(validSession),
+          getMyRequirements(validSession).catch(() => []),
         ]);
 
       setListings(sellerListings);
       setAnalytics(analyticsData);
       setIsAdmin(profile?.role?.toLowerCase() === "admin");
+      setRequirements(buyerRequirements);
     } catch (error) {
       console.error(error);
     } finally {
@@ -153,6 +159,19 @@ const filteredListings = useMemo(() => {
 function logout() {
   clearSession();
   window.location.assign("/");
+}
+async function handleRequirementStatus(id: string, status: Requirement["status"]) {
+  const session = getStoredSession();
+  if (!session?.access_token) {
+    window.location.replace("/");
+    return;
+  }
+  try {
+    await updateRequirementStatus(session, id, status);
+    setRequirements((current) => current.map((item) => item.id === id ? { ...item, status } : item));
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : "Could not update requirement.");
+  }
 }
 function getDaysRemaining(expiresAt: string) {
   if (!expiresAt) return null;
@@ -313,6 +332,7 @@ function getAnalytics(listingId: string) {
           <nav>
             <a href="/">Marketplace</a>
             <a href="/sell">Sell Equipment</a>
+            <a href="/requirement/new">Post Requirement</a>
             <a href="/profile">Profile</a>
             {isAdmin && <a className="adminNavLink" href="/admin">Admin Dashboard</a>}
           </nav>
@@ -357,6 +377,13 @@ function getAnalytics(listingId: string) {
 
             <button
               type="button"
+              onClick={() => window.location.assign("/requirement/new")}
+            >
+              + Post Requirement
+            </button>
+
+            <button
+              type="button"
               onClick={() =>
                 window.location.assign("/profile")
               }
@@ -372,6 +399,39 @@ function getAnalytics(listingId: string) {
             </button>
           </div>
         </section>
+
+        {!loading && (
+          <section id="requirements" className="dashboardRequirements">
+            <div className="dashboardSectionHead">
+              <div>
+                <span className="eyebrow">BUYER REQUESTS</span>
+                <h2>My Requirements</h2>
+                <p>Requirements stay visible for 30 days unless you mark them fulfilled or closed.</p>
+              </div>
+              <button className="primary" type="button" onClick={() => window.location.assign("/requirement/new")}>+ Post Requirement</button>
+            </div>
+            {requirements.length > 0 ? (
+              <div className="dashboardRequirementGrid">
+                {requirements.map((requirement) => (
+                  <article className="dashboardRequirementCard" key={requirement.id}>
+                    <div><span className={`requirementStatus ${requirement.status}`}>{requirement.status}</span><time>{new Date(requirement.createdAt).toLocaleDateString("en-PK")}</time></div>
+                    <h3>{requirement.requiredItem}</h3>
+                    <strong>{requirement.equipmentModel}</strong>
+                    <p>{requirement.details}</p>
+                    <label>Condition: <b>{requirement.acceptableCondition}</b></label>
+                    <select value={requirement.status} onChange={(event) => handleRequirementStatus(requirement.id, event.target.value as Requirement["status"])} aria-label={`Status for ${requirement.requiredItem}`}>
+                      <option value="open">Open</option>
+                      <option value="fulfilled">Fulfilled</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="dashboardEmpty"><h2>No requirements yet</h2><p>Post the equipment or spare part you need.</p><button className="primary" type="button" onClick={() => window.location.assign("/requirement/new")}>+ Post Requirement</button></div>
+            )}
+          </section>
+        )}
 
         {!loading && (
           <>
