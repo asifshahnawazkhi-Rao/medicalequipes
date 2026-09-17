@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, PointerEvent, useEffect, useRef, useState } from "react";
 import { getStoredSession, type AuthSession } from "../auth";
 import {
   createListing,
@@ -16,33 +16,9 @@ import {
 } from "../supabaseData";
 
 const conditions = ["New", "Like New", "Used", "Refurbished", "Demo"];
-const fallbackCategories = ["Diagnostic Equipment", "Surgical Equipment", "Patient Care", "Laboratory Equipment", "Imaging Equipment", "Dental Equipment"];
 const maxFileSize = 5 * 1024 * 1024;
 const maxFiles = 8;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-const automaticCategoryRules = [
-  { category: ["consumable", "paper", "gel"], words: ["ecg paper", "ultrasound paper", "thermal paper", "ecg gel", "ultrasound gel", "electrode", "reagent", "syringe", "glove", "cannula", "medical film"] },
-  { category: ["parts", "accessories", "accessory"], words: ["probe", "transducer", "sensor", "cable", "battery", "adapter", "module", "spare part", "board"] },
-  { category: ["dental"], words: ["dental", "dentist", "handpiece", "scaler", "dental chair", "dental unit"] },
-  { category: ["imaging", "radiology"], words: ["ultrasound", "sonography", "x-ray", "xray", "radiography", "mammography", "ct scanner", "mri", "c-arm"] },
-  { category: ["laboratory", "lab equipment"], words: ["analyzer", "centrifuge", "microscope", "incubator", "hematology", "chemistry analyzer", "laboratory"] },
-  { category: ["surgical", "operation theatre"], words: ["surgical", "operating table", "operation table", "diathermy", "electrosurgical", "anesthesia machine", "suction machine"] },
-  { category: ["patient care", "monitoring"], words: ["patient monitor", "bedside monitor", "infusion pump", "syringe pump", "ventilator", "icu", "hospital bed"] },
-  { category: ["diagnostic"], words: ["ecg", "ekg", "diagnostic", "oximeter", "spirometer", "blood pressure", "bp monitor", "holter"] },
-  { category: ["physiotherapy", "rehabilitation"], words: ["physiotherapy", "massager", "tens", "rehabilitation"] },
-];
-
-function detectCategory(options: CategoryOption[], brand: string, model: string) {
-  const text = `${brand} ${model}`.toLowerCase().replace(/[^a-z0-9+ -]/g, " ");
-  if (!text.trim()) return undefined;
-  for (const rule of automaticCategoryRules) {
-    if (!rule.words.some((word) => text.includes(word))) continue;
-    const match = options.find((option) => rule.category.some((hint) => option.name.toLowerCase().includes(hint)));
-    if (match) return match;
-  }
-  return undefined;
-}
 
 function SelectedPhoto({
   file,
@@ -103,12 +79,9 @@ const [sellerApproved, setSellerApproved] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [photoPickerOpen, setPhotoPickerOpen] = useState(false);
   const [priceOnRequest, setPriceOnRequest] = useState(false);
-  const [systemDecidesCategory, setSystemDecidesCategory] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [managedSellers, setManagedSellers] = useState<ManagedSeller[]>([]);
   const [managedSellerId, setManagedSellerId] = useState("");
-  const [brandText, setBrandText] = useState("");
-  const [modelText, setModelText] = useState("");
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -182,12 +155,6 @@ const [sellerApproved, setSellerApproved] = useState(false);
 
   loadSeller();
 }, []);
-
-  const categoryOptions = useMemo(() => categories, [categories]);
-  const detectedCategory = useMemo(
-    () => detectCategory(categoryOptions, brandText, modelText),
-    [categoryOptions, brandText, modelText]
-  );
 
   function onFilesSelected(selected: FileList | null) {
     setError("");
@@ -347,9 +314,13 @@ if (!session || !sellerApproved) {
       const brand = values.brand?.trim();
       const model = values.model?.trim();
       const localPhone = values.contactPhone?.replace(/\D/g, "") ?? "";
-      if (systemDecidesCategory && !detectedCategory) {
-        throw new Error("System could not identify the category. Enter a clearer product name or untick System Decide and select it manually.");
+      const defaultCategory = categories.find(
+        (category) => category.name.trim().toLowerCase() === "medical equipment"
+      );
+      if (!defaultCategory) {
+        throw new Error('The default "Medical Equipment" category is not configured. Please contact the administrator.');
       }
+      values.categoryId = defaultCategory.id;
       if (!brand || !model || !values.categoryId || !values.condition || (!priceOnRequest && !values.price) || !values.city?.trim() || !values.description?.trim() || !localPhone) {
         throw new Error("Please complete all required listing fields.");
       }
@@ -470,11 +441,11 @@ if (!sellerApproved) {
 }
   return (
     <main className="sellPage">
-      <header className="header"><div className="container nav"><Link className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></Link><nav><Link href="/#categories">Categories</Link><Link href="/#listings">Buy</Link><Link href="/dashboard">Dashboard</Link></nav></div></header>
+      <header className="header"><div className="container nav"><Link className="brand" href="/"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></Link><nav><Link href="/#listings">Buy</Link><Link href="/dashboard">Dashboard</Link></nav></div></header>
       <section className="sellHero"><div className="container"><span className="eyebrow">SELLER MARKETPLACE</span><h1>List medical equipment professionally</h1><p>Create a verified marketplace listing with specifications, pricing, location, and equipment photos.</p></div></section>
       <section className="container sellFormWrap">
         <form className="sellForm" onSubmit={submit}>
-          <div className="formSection"><h2>Equipment details</h2><p className="helpText">Listing title is created from Brand + Model. Choose a category or let the system decide.</p>{isAdmin && <label className="managedSellerPicker">Post on behalf of seller<select name="managedSellerId" value={managedSellerId} onChange={(event) => setManagedSellerId(event.target.value)}><option value="">My admin account</option>{managedSellers.map((seller) => <option key={seller.id} value={seller.id}>{seller.companyName} — {seller.city}</option>)}</select><small>Select a seller created in Admin Dashboard.</small></label>}<div className="formGrid"><label>Brand / product name *<input name="brand" required value={brandText} onChange={(event) => setBrandText(event.target.value)} placeholder="GE Ultrasound, Mindray Patient Monitor" /></label><label>Model *<input name="model" required value={modelText} onChange={(event) => setModelText(event.target.value)} placeholder="Model number/name" /></label><label className="categoryChoice">Category{!systemDecidesCategory && " *"}{systemDecidesCategory ? <div className={`autoCategoryResult ${!detectedCategory ? "waiting" : ""}`}><span>System decision</span><strong>{detectedCategory?.name || "Enter product name to detect"}</strong>{detectedCategory && <input type="hidden" name="categoryId" value={detectedCategory.id} />}</div> : <select name="categoryId" required defaultValue=""><option value="">Select category</option>{categoryOptions.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select>}<span className="priceRequestOption"><input type="checkbox" checked={systemDecidesCategory} onChange={(event) => setSystemDecidesCategory(event.target.checked)} /> System Decide</span></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR){!priceOnRequest && " *"}<input name="price" type="number" min="1" step="1" required={!priceOnRequest} disabled={priceOnRequest} placeholder={priceOnRequest ? "Ask for Price" : "1250000"} /><span className="priceRequestOption"><input type="checkbox" checked={priceOnRequest} onChange={(event) => setPriceOnRequest(event.target.checked)} /> Ask for Price</span></label><label>Location / city *<input key={`city-${managedSellerId}`} name="city" required defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.city || ""} placeholder="Karachi" /></label><label>Contact name<input key={`name-${managedSellerId}`} name="contactName" defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.contactPerson || managedSellers.find((seller) => seller.id === managedSellerId)?.companyName || ""} placeholder="Seller or business name" /></label><label>Contact phone *<span className="phoneField"><span className="phonePrefix">+92</span><input key={`phone-${managedSellerId}`} name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" maxLength={11} defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.phone.replace(/^\+92/, "0") || ""} placeholder="03XXXXXXXXX" title="Enter 11 digits starting with 03" /></span></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
+          <div className="formSection"><h2>Equipment details</h2><p className="helpText">Listing title is created from Brand + Model.</p>{isAdmin && <label className="managedSellerPicker">Post on behalf of seller<select name="managedSellerId" value={managedSellerId} onChange={(event) => setManagedSellerId(event.target.value)}><option value="">My admin account</option>{managedSellers.map((seller) => <option key={seller.id} value={seller.id}>{seller.companyName} — {seller.city}</option>)}</select><small>Select a seller created in Admin Dashboard.</small></label>}<div className="formGrid"><label>Brand / product name *<input name="brand" required placeholder="GE Ultrasound, Mindray Patient Monitor" /></label><label>Model *<input name="model" required placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Price (PKR){!priceOnRequest && " *"}<input name="price" type="number" min="1" step="1" required={!priceOnRequest} disabled={priceOnRequest} placeholder={priceOnRequest ? "Ask for Price" : "1250000"} /><span className="priceRequestOption"><input type="checkbox" checked={priceOnRequest} onChange={(event) => setPriceOnRequest(event.target.checked)} /> Ask for Price</span></label><label>Location / city *<input key={`city-${managedSellerId}`} name="city" required defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.city || ""} placeholder="Karachi" /></label><label>Contact name<input key={`name-${managedSellerId}`} name="contactName" defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.contactPerson || managedSellers.find((seller) => seller.id === managedSellerId)?.companyName || ""} placeholder="Seller or business name" /></label><label>Contact phone *<span className="phoneField"><span className="phonePrefix">+92</span><input key={`phone-${managedSellerId}`} name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" maxLength={11} defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.phone.replace(/^\+92/, "0") || ""} placeholder="03XXXXXXXXX" title="Enter 11 digits starting with 03" /></span></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
           <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Add 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoPicker"><button className="photoPickerButton" type="button" onClick={() => setPhotoPickerOpen((open) => !open)}>Choose Files <span>▾</span></button>{photoPickerOpen && <div className="photoPickerMenu"><button type="button" onClick={() => { setPhotoPickerOpen(false); cameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button><button type="button" onClick={() => { setPhotoPickerOpen(false); galleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select one or more existing photos</small></button></div>}<input ref={cameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /><input ref={galleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" multiple onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
           {progress > 0 && <div className="progress"><span style={{ width: `${progress}%` }} /></div>}
           {message && <div className="authMessage" role="status">{message}</div>}
