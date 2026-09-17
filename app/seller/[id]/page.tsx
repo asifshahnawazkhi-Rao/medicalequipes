@@ -123,7 +123,6 @@ export default function SellerPage({
 
           <nav>
             <a href="/">Marketplace</a>
-            <a href="/#categories">Categories</a>
             <a href="/#listings">Buy</a>
           </nav>
         </div>
