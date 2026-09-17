@@ -9,6 +9,7 @@ export default function PostRequirementPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const stored = getStoredSession();
@@ -31,10 +32,32 @@ export default function PostRequirementPage() {
     try {
       setBusy(true);
       setError("");
-      await createRequirement(session, values);
-      window.location.assign("/dashboard#requirements");
+      setMessage("Publishing requirement...");
+      const requirement = await createRequirement(session, values);
+      if (!requirement?.id) throw new Error("Requirement was created without an id response.");
+
+      setMessage("Sharing requirement on Facebook...");
+      const facebookResponse = await fetch("/api/facebook/publish-requirement", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ requirementId: requirement.id }),
+      });
+      const facebookResult = await facebookResponse.json().catch(() => ({}));
+
+      setMessage(
+        facebookResponse.ok
+          ? "Requirement published and shared on Facebook. Redirecting..."
+          : `Requirement published successfully. Facebook sharing could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
+      );
+      window.setTimeout(() => {
+        window.location.assign("/dashboard#requirements");
+      }, facebookResponse.ok ? 1200 : 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not post requirement.");
+      setMessage("");
     } finally {
       setBusy(false);
     }
@@ -51,6 +74,7 @@ export default function PostRequirementPage() {
           <label>Condition acceptable *<select name="acceptableCondition" required defaultValue="Any"><option>New</option><option>Used</option><option>Refurbished</option><option>Any</option></select></label>
           <label>Details *<textarea name="details" required rows={6} placeholder="Problem, specification or part number" /></label>
           {error && <div className="formError" role="alert">{error}</div>}
+          {message && <div className="formMessage" role="status">{message}</div>}
           <button className="primary" type="submit" disabled={busy}>{busy ? "Posting requirement..." : "+ Post Requirement"}</button>
         </form>
       </section>
