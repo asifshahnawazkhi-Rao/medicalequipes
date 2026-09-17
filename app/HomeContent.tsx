@@ -10,10 +10,12 @@ import {
   getFavoriteListingIds,
   getPublicListings,
   getPublicSellers,
+  getPublicRequirements,
   recordSearchEvent,
   removeFavorite,
   type PublicSeller,
   type CategoryOption,
+  type Requirement,
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
 
@@ -52,6 +54,7 @@ export default function HomeContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
+  const [publicRequirements, setPublicRequirements] = useState<Requirement[]>([]);
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -132,7 +135,7 @@ useEffect(() => {
     })
     .catch(() => setMarketListings([]));
 }, []);
-  useEffect(() => {
+useEffect(() => {
   getPublicSellers()
     .then(setPublicSellers)
     .catch((error) => {
@@ -140,6 +143,14 @@ useEffect(() => {
       setPublicSellers([]);
     });
 }, []);
+  useEffect(() => {
+    getPublicRequirements()
+      .then(setPublicRequirements)
+      .catch((error) => {
+        console.error("Could not load buyer requirements:", error);
+        setPublicRequirements([]);
+      });
+  }, []);
 const cityOptions = useMemo(() => {
   const uniqueCities = Array.from(
     new Set(
@@ -273,7 +284,7 @@ const cityOptions = useMemo(() => {
 
   return (
     <main>
-<header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
+<header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#requirements">Requirements</a><a href="#sellers">Sellers</a></nav><div className="navActions">
   {isLoggedIn ? (
   <>
     <a className="headerUser" href="/profile" title={loggedInUser || "Logged in user"}>
@@ -418,7 +429,7 @@ const cityOptions = useMemo(() => {
 )}
         <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term) => <button className={query === term ? "popularChip active" : "popularChip"} key={term} type="button" onClick={() => { setQuery(term); setTimeout(() => search(undefined, term), 20); }}>{term}</button>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="monitorShell"><div className="deviceScreen monitorScreen"><div className="monitorTop"><span>ECG MONITOR</span><i>● LIVE</i></div><div className="monitorDisplay"><svg className="ecgWave" viewBox="0 0 560 120" role="img" aria-label="Live ECG waveform"><defs><pattern id="ecgGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.7" /></pattern></defs><rect width="560" height="120" fill="url(#ecgGrid)" /><polyline points="0,69 45,69 58,64 68,70 80,69 94,25 108,104 122,50 136,69 186,69 200,64 210,70 223,69 237,25 251,104 265,50 279,69 329,69 343,64 353,70 366,69 380,25 394,104 408,50 422,69 472,69 486,64 496,70 509,69 523,25 537,104 551,50 560,69" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="monitorVitals"><div><span>HR</span><b>78</b><small>BPM</small></div><div><span>SpO₂</span><b>98</b><small>%</small></div><div><span>NIBP</span><b>120/80</b><small>mmHg</small></div></div></div><div className="monitorBrand"><span>MEDICAL</span><strong>EQUIPES</strong></div></div><div className="monitorControls"><span /><span /><span /><span /><b /></div></div><div className="deviceStand"><span /><b /></div></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
-      <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
+      <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><button className="quickAction" onClick={() => isLoggedIn ? window.location.assign('/requirement/new') : setAuthOpen(true)}><span>!</span><div><b>Post Requirement</b><small>Tell sellers what you need</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
       <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button
   type="button"
@@ -498,6 +509,37 @@ const cityOptions = useMemo(() => {
 >
   Show all equipment
 </button></div>}</div></section>
+
+   <section id="requirements" className="section requirementsSection">
+    <div className="container">
+      <div className="sectionHead">
+        <div>
+          <span className="eyebrow">WANTED EQUIPMENT &amp; PARTS</span>
+          <h2>Buyer Requirements</h2>
+          <p>See what hospitals, dealers and professionals currently need.</p>
+        </div>
+        <button type="button" onClick={() => isLoggedIn ? window.location.assign('/requirement/new') : setAuthOpen(true)}>
+          + Post Requirement
+        </button>
+      </div>
+      {publicRequirements.length > 0 ? (
+        <div className="requirementGrid">
+          {publicRequirements.map((requirement) => (
+            <article className="requirementCard" key={requirement.id}>
+              <div className="requirementCardTop"><span>WANTED</span><time>{new Date(requirement.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}</time></div>
+              <h3>{requirement.requiredItem}</h3>
+              <p className="requirementModel">{requirement.equipmentModel}</p>
+              <div className="requirementCondition">Condition: <strong>{requirement.acceptableCondition}</strong></div>
+              <p className="requirementDetails">{requirement.details}</p>
+              <footer><div><strong>{requirement.posterName}</strong><small>{requirement.posterCity || "Pakistan"}</small></div><span className="openRequirementLabel">Open Requirement</span></footer>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="emptyState"><h3>No open requirements yet</h3><p>Post the first requirement and let verified sellers respond.</p></div>
+      )}
+    </div>
+   </section>
 
    <section id="sellers" className="section container">
   <div className="sectionHead">
