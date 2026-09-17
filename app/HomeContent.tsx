@@ -34,17 +34,6 @@ type Listing = [
 
 
 
-function categoryVisual(name: string, index: number) {
-  const value = name.toLowerCase();
-  if (/dental|dentist/.test(value)) return 1;
-  if (/diagnostic|imaging|ultrasound|ecg|x-ray|radiology/.test(value)) return 2;
-  if (/laboratory|lab|analy[sz]er|microscope/.test(value)) return 3;
-  if (/surgical|operation|operating|ot |theatre/.test(value)) return 4;
-  if (/emergency|critical|monitor|ventilator|icu|patient/.test(value)) return 5;
-  if (/part|accessor|consumable|gel|paper|probe|cable/.test(value)) return 6;
-  return (index % 6) + 1;
-}
-
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
@@ -63,7 +52,6 @@ export default function HomeContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
-  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -253,7 +241,6 @@ const cityOptions = useMemo(() => {
       recordSearchEvent(term, resultCount, city, category).catch(() => undefined);
     }
   }
-  function chooseCategory(name: string) { setCategory(name); setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 20); }
   async function toggleFavorite(listingId: string) {
   const session = getStoredSession();
 
@@ -286,7 +273,7 @@ const cityOptions = useMemo(() => {
 
   return (
     <main>
-<header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#categories">Categories</a><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
+<header className="header"><div className="container nav"><a className="brand" href="#top"><span className="brandMark">+</span><span>Medical<span>Equipes</span></span></a><nav><a href="#listings">Buy</a><button type="button" onClick={goToSell}>Sell</button><a href="#sellers">Sellers</a></nav><div className="navActions">
   {isLoggedIn ? (
   <>
     <a className="headerUser" href="/profile" title={loggedInUser || "Logged in user"}>
@@ -433,24 +420,6 @@ const cityOptions = useMemo(() => {
 
       <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
-      <section id="categories" className="section container"><div className="sectionHead"><div><span className="eyebrow">EXPLORE</span><h2>Browse by Category</h2></div><button type="button" onClick={() => chooseCategory("All")}>View all categories →</button></div><div className="categoryGrid">
-  {categoryOptions.map((cat, index) => (
-    <button
-      type="button"
-      className={`category categoryVisual${categoryVisual(cat.name, index)} ${category === cat.name ? "active" : ""}`}
-      key={cat.id}
-      onClick={() => chooseCategory(cat.name)}
-    >
-      <div className="categoryOverlay" />
-      <div className="categoryContent">
-        <div className="catIcon">{String(index + 1).padStart(2, "0")}</div>
-        <h3>{cat.name}</h3>
-        <span>Explore →</span>
-      </div>
-    </button>
-  ))}
-</div></section>
-
       <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button
   type="button"
   onClick={() => {
@@ -585,15 +554,7 @@ const cityOptions = useMemo(() => {
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedSellerId(seller.id);
-
-                  window.setTimeout(() => {
-                    document
-                      .getElementById("listings")
-                      ?.scrollIntoView({
-                        behavior: "smooth",
-                      });
-                  }, 20);
+                  window.location.assign(`/seller/${seller.id}`);
                 }}
               >
                 View Listings
@@ -682,7 +643,6 @@ const cityOptions = useMemo(() => {
     <div>
       <b>Marketplace</b>
       <a href="#listings">Browse Equipment</a>
-      <a href="#categories">Categories</a>
       <a href="#sellers">Verified Sellers</a>
     </div>
 
