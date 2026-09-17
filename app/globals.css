@@ -2402,3 +2402,52 @@
 .categoryChoice { align-self: start; }
 .autoCategoryFallback small { color: #875f1a; font-weight: 500; }
 
+/* Buyer requirement form, public cards and dashboard management */
+.requirementPage { min-height: 100vh; background: #f4f8f9; }
+.requirementHero { padding: 58px 0 78px; background: linear-gradient(135deg, #073d49, #0a8992); color: #fff; }
+.requirementHero h1 { max-width: 720px; margin: 8px 0 10px; color: #fff; font-size: clamp(34px, 5vw, 54px); }
+.requirementHero p { margin: 0; color: #d7fbfa; font-size: 18px; }
+.requirementFormWrap { margin-top: -38px; padding-bottom: 72px; }
+.requirementForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 880px; margin: 0 auto; padding: 30px; border: 1px solid #d7e5e8; border-radius: 20px; background: #fff; box-shadow: 0 18px 50px rgba(16,35,61,.1); }
+.requirementForm label { display: grid; gap: 8px; color: #10233d; font-size: 14px; font-weight: 800; }
+.requirementForm label:last-of-type { grid-column: 1 / -1; }
+.requirementForm input, .requirementForm select, .requirementForm textarea { width: 100%; border: 1px solid #c8d9de; border-radius: 10px; padding: 13px 14px; background: #fff; color: #10233d; font: inherit; }
+.requirementForm textarea { resize: vertical; }
+.requirementForm .formError, .requirementForm > button { grid-column: 1 / -1; }
+.requirementsSection { background: #f2f8f8; }
+.requirementGrid, .dashboardRequirementGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.requirementCard { display: flex; flex-direction: column; min-height: 330px; padding: 23px; border: 1px solid #d5e4e7; border-radius: 18px; background: #fff; box-shadow: 0 12px 30px rgba(16,35,61,.07); }
+.requirementCardTop, .requirementCard footer, .dashboardRequirementCard > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.requirementCardTop span { padding: 6px 10px; border-radius: 999px; background: #fff0e6; color: #b45309; font-size: 11px; font-weight: 900; letter-spacing: .08em; }
+.requirementCard time, .dashboardRequirementCard time { color: #758893; font-size: 12px; }
+.requirementCard h3 { margin: 20px 0 4px; color: #10233d; font-size: 23px; }
+.requirementModel { margin: 0 0 14px; color: #087f8c; font-weight: 800; }
+.requirementCondition { width: max-content; max-width: 100%; padding: 7px 10px; border-radius: 8px; background: #e9f7f7; color: #47636c; font-size: 13px; }
+.requirementDetails { flex: 1; color: #566e78; line-height: 1.6; }
+.requirementCard footer { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e1eaec; }
+.requirementCard footer strong, .requirementCard footer small { display: block; }
+.requirementCard footer small { margin-top: 3px; color: #71858e; }
+.openRequirementLabel { color: #087f8c; font-size: 12px; font-weight: 900; }
+.dashboardRequirements { margin: 30px 0; padding: 26px; border: 1px solid #d9e5e8; border-radius: 18px; background: #fff; }
+.dashboardSectionHead { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.dashboardSectionHead h2 { margin: 5px 0; }
+.dashboardSectionHead p { margin: 0; color: #667b84; }
+.dashboardRequirementCard { display: grid; gap: 10px; padding: 19px; border: 1px solid #d9e5e8; border-radius: 14px; background: #f9fbfc; }
+.dashboardRequirementCard h3 { margin: 4px 0 0; }
+.dashboardRequirementCard > strong { color: #087f8c; }
+.dashboardRequirementCard p { min-height: 48px; margin: 2px 0; color: #5b7079; line-height: 1.5; }
+.dashboardRequirementCard label { color: #5b7079; font-size: 13px; }
+.dashboardRequirementCard select { width: 100%; border: 1px solid #c7d9dd; border-radius: 9px; padding: 10px; background: #fff; font: inherit; }
+.requirementStatus { padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.requirementStatus.open { background: #def7ec; color: #087456; }
+.requirementStatus.fulfilled { background: #e8efff; color: #315aa8; }
+.requirementStatus.closed { background: #edf0f2; color: #66727a; }
+@media (max-width: 900px) { .requirementGrid, .dashboardRequirementGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 650px) {
+  .requirementForm, .requirementGrid, .dashboardRequirementGrid { grid-template-columns: 1fr; }
+  .requirementForm label:last-of-type, .requirementForm .formError, .requirementForm > button { grid-column: 1; }
+  .requirementForm { padding: 22px 18px; }
+  .dashboardRequirements { padding: 20px 15px; }
+  .dashboardSectionHead { align-items: flex-start; flex-direction: column; }
+}
+
