@@ -1161,32 +1161,57 @@ export type PublicSeller = {
   businessName: string;
   city: string;
   activeListingCount: number;
+  isManaged: boolean;
 };
 
 export async function getPublicSellers(): Promise<PublicSeller[]> {
-  const rows = await supabaseFetch<
-    Array<Record<string, unknown>>
-  >(
-    "/rest/v1/rpc/get_public_sellers",
-    undefined,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    }
-  );
+  const now = new Date().toISOString();
+  const [rows, managedRows, managedListingRows] = await Promise.all([
+    supabaseFetch<Array<Record<string, unknown>>>(
+      "/rest/v1/rpc/get_public_sellers",
+      undefined,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }
+    ),
+    supabaseFetch<Array<Record<string, unknown>>>(
+      "/rest/v1/managed_sellers?select=id,company_name,contact_person,city&status=in.(active,claimed)&order=company_name.asc"
+    ),
+    supabaseFetch<Array<Record<string, unknown>>>(
+      `/rest/v1/listings?select=managed_seller_id&managed_seller_id=not.is.null&status=in.(active,out_of_stock)&expires_at=gt.${encodeURIComponent(now)}`
+    ),
+  ]);
 
-  return rows.map((row) => ({
+  const managedListingCounts = new Map<string, number>();
+  for (const listing of managedListingRows) {
+    const id = String(listing.managed_seller_id ?? "");
+    if (id) managedListingCounts.set(id, (managedListingCounts.get(id) ?? 0) + 1);
+  }
+
+  const registeredSellers = rows.map((row) => ({
     id: String(row.id ?? ""),
     fullName: String(row.full_name ?? ""),
     businessName: String(row.business_name ?? ""),
     city: String(row.city ?? ""),
-    activeListingCount: Number(
-      row.active_listing_count ?? 0
-    ),
+    activeListingCount: Number(row.active_listing_count ?? 0),
+    isManaged: false,
   }));
+
+  const managedSellers = managedRows.map((row) => {
+    const rawId = String(row.id ?? "");
+    return {
+      id: `managed-${rawId}`,
+      fullName: String(row.contact_person ?? ""),
+      businessName: String(row.company_name ?? ""),
+      city: String(row.city ?? ""),
+      activeListingCount: managedListingCounts.get(rawId) ?? 0,
+      isManaged: true,
+    };
+  });
+
+  return [...registeredSellers, ...managedSellers];
 }
 export async function getPublicSellerById(
   sellerId: string
@@ -1204,12 +1229,15 @@ export async function getPublicSellerListings(
   sellerId: string
 ): Promise<PublicListing[]> {
   const now = new Date().toISOString();
+  const isManaged = sellerId.startsWith("managed-");
+  const rawSellerId = isManaged ? sellerId.slice("managed-".length) : sellerId;
+  const sellerFilter = isManaged ? "managed_seller_id" : "seller_id";
 
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/listings?select=id,title,price,city,condition,brand,model,status,expires_at,categories(name),listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
-      sellerId
+    `/rest/v1/listings?select=id,title,price,city,condition,brand,model,status,expires_at,categories(name),listing_images(image_url,sort_order)&${sellerFilter}=eq.${encodeURIComponent(
+      rawSellerId
     )}&status=in.(active,out_of_stock)&expires_at=gt.${encodeURIComponent(
       now
     )}&order=created_at.desc`
