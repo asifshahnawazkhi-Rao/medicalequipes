@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseConfig } from "../../../auth";
+import { publishInstagramImage } from "../instagram";
 
 type ListingRow = {
   id: string;
@@ -197,10 +198,25 @@ export async function POST(request: NextRequest) {
         : await graphPost(`${pageId}/feed`, { message: caption, access_token: resolvedPageToken });
     }
 
+    let instagram: { ok: boolean; postId?: string; error?: string } = { ok: false };
+    if (action === "update") {
+      instagram = { ok: true };
+    } else if (!imageUrl) {
+      instagram = { ok: false, error: "Instagram requires a listing image." };
+    } else {
+      try {
+        const instagramPost = await publishInstagramImage(pageId, resolvedPageToken, imageUrl, caption);
+        instagram = { ok: true, postId: instagramPost.postId };
+      } catch (instagramError) {
+        instagram = { ok: false, error: instagramError instanceof Error ? instagramError.message : "Instagram sharing failed." };
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       updated,
       postId: updated ? existingPost?.id : result.post_id || result.id,
+      instagram,
     });
   } catch (error) {
     console.error("Facebook listing publish failed", error);
