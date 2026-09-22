@@ -362,7 +362,9 @@ if (!session || !sellerApproved) {
       setProgress(100);
       setMessage(
         facebookResponse.ok
-          ? "Listing published and shared on Facebook. Redirecting to your dashboard..."
+          ? facebookResult?.instagram?.ok
+            ? "Listing published and shared on Facebook and Instagram. Redirecting to your dashboard..."
+            : `Listing published and shared on Facebook. Instagram sharing could not finish${facebookResult?.instagram?.error ? `: ${facebookResult.instagram.error}` : "."}`
           : `Listing published successfully. Facebook sharing could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
       );
       window.setTimeout(() => {
