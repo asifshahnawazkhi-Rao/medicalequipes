@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseConfig } from "../../../auth";
+import { publishInstagramImage } from "../instagram";
 
 type RequirementRow = {
   id: string;
@@ -92,7 +93,21 @@ export async function POST(request: NextRequest) {
       throw new Error(result?.error?.message || "Facebook rejected the requirement post.");
     }
 
-    return NextResponse.json({ ok: true, postId: result.id });
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://medicalequipes.com").replace(/\/$/, "");
+    let instagram: { ok: boolean; postId?: string; error?: string } = { ok: false };
+    try {
+      const instagramPost = await publishInstagramImage(
+        pageId,
+        pageAccessToken,
+        `${siteUrl}/api/social/requirement-card/${requirement.id}`,
+        requirementCaption(requirement)
+      );
+      instagram = { ok: true, postId: instagramPost.postId };
+    } catch (instagramError) {
+      instagram = { ok: false, error: instagramError instanceof Error ? instagramError.message : "Instagram sharing failed." };
+    }
+
+    return NextResponse.json({ ok: true, postId: result.id, instagram });
   } catch (error) {
     console.error("Facebook requirement publish failed", error);
     return NextResponse.json(
