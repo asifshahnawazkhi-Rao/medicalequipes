@@ -49,7 +49,9 @@ export default function PostRequirementPage() {
 
       setMessage(
         facebookResponse.ok
-          ? "Requirement published and shared on Facebook. Redirecting..."
+          ? facebookResult?.instagram?.ok
+            ? "Requirement published and shared on Facebook and Instagram. Redirecting..."
+            : `Requirement published and shared on Facebook. Instagram sharing could not finish${facebookResult?.instagram?.error ? `: ${facebookResult.instagram.error}` : "."}`
           : `Requirement published successfully. Facebook sharing could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
       );
       window.setTimeout(() => {
