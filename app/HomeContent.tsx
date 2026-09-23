@@ -34,6 +34,27 @@ type Listing = [
   string  // status
 ];
 
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function searchTextMatches(searchableText: string, searchTerm: string) {
+  const normalizedText = normalizeSearchText(searchableText);
+  const normalizedTerm = normalizeSearchText(searchTerm);
+  if (!normalizedTerm) return true;
+
+  const compactText = normalizedText.replace(/\s+/g, "");
+  const compactTerm = normalizedTerm.replace(/\s+/g, "");
+
+  return normalizedText.includes(normalizedTerm) || compactText.includes(compactTerm);
+}
+
 
 
 export default function HomeContent() {
@@ -176,7 +197,7 @@ const cityOptions = useMemo(() => {
   return ["All", ...uniqueConditions];
 }, [marketListings]);
   const filtered = useMemo(() => {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
 
   const min = minPrice ? Number(minPrice) : null;
   const max = maxPrice ? Number(maxPrice) : null;
@@ -196,9 +217,10 @@ const cityOptions = useMemo(() => {
     ]) =>
       (
         !q ||
-        `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`
-          .toLowerCase()
-          .includes(q)
+        searchTextMatches(
+          `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`,
+          q
+        )
       ) &&
       (category === "All" || cat === category) &&
       (city === "All Pakistan" || listingCity === city) &&
@@ -247,7 +269,7 @@ const cityOptions = useMemo(() => {
     document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
     if (term.length >= 2) {
       const resultCount = marketListings.filter(([, title, cat, , listingCity, condition, , brand, model]) =>
-        `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`.toLowerCase().includes(term.toLowerCase())
+        searchTextMatches(`${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`, term)
       ).length;
       recordSearchEvent(term, resultCount, city, category).catch(() => undefined);
     }
