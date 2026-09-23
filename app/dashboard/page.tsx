@@ -34,6 +34,7 @@ export default function Dashboard() {
   ListingAnalytics[]
 >([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [gallery, setGallery] = useState<{ title: string; images: string[]; index: number } | null>(null);
 
   useEffect(() => {
   const session = getStoredSession();
@@ -70,6 +71,18 @@ export default function Dashboard() {
 
   loadDashboard();
 }, []);
+
+  useEffect(() => {
+    if (!gallery) return;
+    function handleGalleryKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setGallery(null);
+      if (event.key === "ArrowLeft") setGallery((current) => current ? { ...current, index: (current.index - 1 + current.images.length) % current.images.length } : null);
+      if (event.key === "ArrowRight") setGallery((current) => current ? { ...current, index: (current.index + 1) % current.images.length } : null);
+    }
+    window.addEventListener("keydown", handleGalleryKey);
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", handleGalleryKey); document.body.style.overflow = ""; };
+  }, [gallery]);
 
   const counts = useMemo(() => {
   const expired = listings.filter((listing) => {
@@ -589,10 +602,15 @@ function getAnalytics(listingId: string) {
               >
                 <div className="dashboardListingImage">
                   {listing.imageUrl ? (
-                    <img
-                      src={listing.imageUrl}
-                      alt={listing.title}
-                    />
+                    <button
+                      className="dashboardImageButton"
+                      type="button"
+                      aria-label={`View all photos for ${listing.title}`}
+                      onClick={() => setGallery({ title: listing.title, images: listing.images.length ? listing.images : [listing.imageUrl], index: 0 })}
+                    >
+                      <img src={listing.imageUrl} alt={listing.title} />
+                      <span className="dashboardPhotoCount">⌕ {listing.images.length || 1} photo{(listing.images.length || 1) === 1 ? "" : "s"}</span>
+                    </button>
                   ) : (
                     <div>No image</div>
                   )}
@@ -773,6 +791,19 @@ function getAnalytics(listingId: string) {
           </div>
         )}
       </div>
+      {gallery && (
+        <div className="dashboardGalleryBackdrop" role="dialog" aria-modal="true" aria-label={`${gallery.title} photos`} onClick={() => setGallery(null)}>
+          <section className="dashboardGallery" onClick={(event) => event.stopPropagation()}>
+            <header><div><strong>{gallery.title}</strong><span>{gallery.index + 1} / {gallery.images.length}</span></div><button type="button" aria-label="Close photos" onClick={() => setGallery(null)}>×</button></header>
+            <div className="dashboardGalleryStage">
+              {gallery.images.length > 1 && <button className="dashboardGalleryPrevious" type="button" aria-label="Previous photo" onClick={() => setGallery((current) => current ? { ...current, index: (current.index - 1 + current.images.length) % current.images.length } : null)}>‹</button>}
+              <img src={gallery.images[gallery.index]} alt={`${gallery.title} photo ${gallery.index + 1}`} />
+              {gallery.images.length > 1 && <button className="dashboardGalleryNext" type="button" aria-label="Next photo" onClick={() => setGallery((current) => current ? { ...current, index: (current.index + 1) % current.images.length } : null)}>›</button>}
+            </div>
+            {gallery.images.length > 1 && <div className="dashboardGalleryThumbs">{gallery.images.map((image, index) => <button type="button" key={`${image}-${index}`} className={index === gallery.index ? "active" : ""} onClick={() => setGallery((current) => current ? { ...current, index } : null)}><img src={image} alt={`Photo ${index + 1}`} /></button>)}</div>}
+          </section>
+        </div>
+      )}
     </main>
   );
 }
