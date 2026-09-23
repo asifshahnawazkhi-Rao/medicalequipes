@@ -24,12 +24,21 @@ type ListingFilter =
   | "draft"
   | "expired";
 
+function normalizeListingSearch(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
 export default function Dashboard() {
   const [email, setEmail] = useState<string | undefined>();
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [filter, setFilter] = useState<ListingFilter>("all");
+  const [listingSearch, setListingSearch] = useState("");
   const [analytics, setAnalytics] = useState<
   ListingAnalytics[]
 >([]);
@@ -133,12 +142,10 @@ const engagementTotals = useMemo(() => {
   );
 }, [analytics]);
 const filteredListings = useMemo(() => {
-  if (filter === "all") {
-    return listings;
-  }
+  let statusListings = listings;
 
   if (filter === "expired") {
-    return listings.filter((listing) => {
+    statusListings = listings.filter((listing) => {
       const days = getDaysRemaining(
         listing.expiresAt
       );
@@ -149,10 +156,8 @@ const filteredListings = useMemo(() => {
         days <= 0
       );
     });
-  }
-
-  if (filter === "active") {
-    return listings.filter((listing) => {
+  } else if (filter === "active") {
+    statusListings = listings.filter((listing) => {
       const days = getDaysRemaining(
         listing.expiresAt
       );
@@ -162,12 +167,21 @@ const filteredListings = useMemo(() => {
         (days === null || days > 0)
       );
     });
+  } else if (filter !== "all") {
+    statusListings = listings.filter(
+      (listing) => listing.status === filter
+    );
   }
 
-  return listings.filter(
-    (listing) => listing.status === filter
+  const normalizedSearch = normalizeListingSearch(listingSearch);
+  if (!normalizedSearch) return statusListings;
+
+  return statusListings.filter((listing) =>
+    normalizeListingSearch(
+      `${listing.title} ${listing.condition} ${listing.city}`
+    ).includes(normalizedSearch)
   );
-}, [listings, filter]);
+}, [listings, filter, listingSearch]);
 
 function logout() {
   clearSession();
@@ -191,7 +205,7 @@ function getDaysRemaining(expiresAt: string) {
 
   const expiry = new Date(expiresAt).getTime();
   const now = Date.now();
-  
+
 
   return Math.ceil(
     (expiry - now) / (1000 * 60 * 60 * 24)
@@ -207,7 +221,7 @@ function getAnalytics(listingId: string) {
       favorites: 0,
     }
   );
-}  
+}
   async function handleRenew(listingId: string) {
   const session = getStoredSession();
 
@@ -468,7 +482,7 @@ function getAnalytics(listingId: string) {
                 <span>Out of Stock</span>
                 <strong>{counts.outOfStock}</strong>
               </div>
-          
+
               <div className="dashboardStatCard">
                 <span>Inactive</span>
                 <strong>{counts.draft}</strong>
@@ -487,6 +501,24 @@ function getAnalytics(listingId: string) {
   <strong>{engagementTotals.favorites}</strong>
 </div>
        </section>
+            <div className="dashboardListingSearch">
+              <label htmlFor="dashboard-listing-search">Find in my listings</label>
+              <div>
+                <input
+                  id="dashboard-listing-search"
+                  type="search"
+                  value={listingSearch}
+                  onChange={(event) => setListingSearch(event.target.value)}
+                  placeholder="Search model, e.g. P93, UP895..."
+                />
+                {listingSearch && (
+                  <button type="button" onClick={() => setListingSearch("")}>Clear</button>
+                )}
+              </div>
+              {listingSearch && (
+                <small>{filteredListings.length} matching listing{filteredListings.length === 1 ? "" : "s"}</small>
+              )}
+            </div>
             <div className="dashboardFilterTabs">
               <button
                 type="button"
@@ -585,12 +617,13 @@ function getAnalytics(listingId: string) {
         ) : filteredListings.length === 0 ? (
           <div className="dashboardEmpty">
             <h2>
-              No {filter} listings
+              {listingSearch ? `No listings found for “${listingSearch}”` : `No ${filter} listings`}
             </h2>
 
             <p>
-              There are currently no listings in this
-              section.
+              {listingSearch
+                ? "Try the model with or without spaces, hyphens, or symbols."
+                : "There are currently no listings in this section."}
             </p>
           </div>
         ) : (
@@ -626,7 +659,7 @@ function getAnalytics(listingId: string) {
           ? "Out of Stock"
         : listing.status}
 </span>
-                 
+
                 </div>
  {(() => {
   const daysRemaining = getDaysRemaining(
