@@ -2,6 +2,62 @@ import { AuthSession, getSupabaseConfig } from "./auth";
 
 export type CategoryOption = { id: string; name: string };
 
+export type SocialPost = {
+  id: string;
+  postType: string;
+  title: string;
+  caption: string;
+  imageUrl: string;
+  websiteUrl: string;
+  facebookStatus: string;
+  instagramStatus: string;
+  facebookError: string;
+  instagramError: string;
+  createdAt: string;
+  publishedAt: string;
+};
+
+function mapSocialPost(row: Record<string, unknown>): SocialPost {
+  return {
+    id: String(row.id ?? ""), postType: String(row.post_type ?? "general"), title: String(row.title ?? ""),
+    caption: String(row.caption ?? ""), imageUrl: String(row.image_url ?? ""), websiteUrl: String(row.website_url ?? ""),
+    facebookStatus: String(row.facebook_status ?? "not_selected"), instagramStatus: String(row.instagram_status ?? "not_selected"),
+    facebookError: String(row.facebook_error ?? ""), instagramError: String(row.instagram_error ?? ""),
+    createdAt: String(row.created_at ?? ""), publishedAt: String(row.published_at ?? ""),
+  };
+}
+
+export async function getAdminSocialPosts(session: AuthSession): Promise<SocialPost[]> {
+  requireUserSession(session);
+  try {
+    const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/social_posts?select=*&order=created_at.desc&limit=100", session);
+    return rows.map(mapSocialPost);
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes("social_posts") || error.message.includes("schema cache"))) return [];
+    throw error;
+  }
+}
+
+export async function uploadSocialPostImage(session: AuthSession, file: File) {
+  requireUserSession(session);
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const path = `${session.user!.id}/social/${Date.now()}-${safeName}`;
+  await supabaseFetch(`/storage/v1/object/listing-images/${path}`, session, {
+    method: "POST", headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "false" }, body: file,
+  });
+  const { url } = getSupabaseConfig();
+  return `${url}/storage/v1/object/public/listing-images/${path}`;
+}
+
+export async function saveSocialPost(session: AuthSession, values: Record<string, unknown>): Promise<SocialPost> {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/social_posts?select=*", session, {
+    method: "POST", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ created_by: session.user!.id, ...values }),
+  });
+  return mapSocialPost(rows[0]);
+}
+
 export type Requirement = {
   id: string;
   requiredItem: string;
@@ -767,6 +823,7 @@ export type SellerListing = {
   condition: string;
   status: string;
   imageUrl: string;
+  images: string[];
   expiresAt: string;
 };
 
@@ -808,6 +865,9 @@ export async function getSellerListings(
       condition: String(row.condition ?? ""),
       status: String(row.status ?? ""),
       imageUrl: String(images[0]?.image_url ?? ""),
+      images: images
+        .map((image) => String(image.image_url ?? ""))
+        .filter(Boolean),
       expiresAt: String(row.expires_at ?? ""),
     };
   });
