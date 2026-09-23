@@ -14,9 +14,19 @@ create table if not exists public.social_posts (
   instagram_post_id text,
   facebook_error text,
   instagram_error text,
+  scheduled_at timestamptz,
+  schedule_status text not null default 'published' check (schedule_status in ('scheduled', 'processing', 'published', 'failed', 'cancelled')),
+  attempts integer not null default 0,
+  last_attempt_at timestamptz,
   created_at timestamptz not null default now(),
   published_at timestamptz
 );
+
+alter table public.social_posts add column if not exists scheduled_at timestamptz;
+alter table public.social_posts add column if not exists schedule_status text not null default 'published';
+alter table public.social_posts add column if not exists attempts integer not null default 0;
+alter table public.social_posts add column if not exists last_attempt_at timestamptz;
+create index if not exists social_posts_due_idx on public.social_posts (schedule_status, scheduled_at);
 
 alter table public.social_posts enable row level security;
 
