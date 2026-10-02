@@ -121,6 +121,8 @@ const listingFields = {
   contactPhone: ["contact_phone", "phone", "phone_number"],
   managedSellerId: ["managed_seller_id"],
   status: ["status"],
+  quantity: ["quantity"],
+  stockLocation: ["stock_location"],
 } as const;
 
 const listingImageFields = {
@@ -251,6 +253,8 @@ setExisting(payload, columns, listingFields.category, values.categoryId);
   setExisting(payload, columns, listingFields.contactEmail, values.contactEmail?.trim());
   setExisting(payload, columns, listingFields.contactPhone, values.contactPhone?.trim());
   setExisting(payload, columns, listingFields.status, "active");
+  setExisting(payload, columns, listingFields.quantity, Math.max(0, Number(values.quantity || "1")));
+  setExisting(payload, columns, listingFields.stockLocation, values.stockLocation?.trim());
 
   const rows = await supabaseFetch<Array<{ id: string }>>('/rest/v1/listings?select=id', session, {
     method: "POST",
@@ -825,6 +829,8 @@ export type SellerListing = {
   imageUrl: string;
   images: string[];
   expiresAt: string;
+  quantity: number;
+  stockLocation: string;
 };
 
 export async function getSellerListings(
@@ -837,7 +843,7 @@ export async function getSellerListings(
   const rows = await supabaseFetch<
     Array<Record<string, unknown>>
   >(
-    `/rest/v1/listings?select=id,title,price,city,condition,status,expires_at,listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
+    `/rest/v1/listings?select=id,title,price,city,condition,status,quantity,stock_location,expires_at,listing_images(image_url,sort_order)&seller_id=eq.${encodeURIComponent(
       userId
     )}&order=created_at.desc`,
     session
@@ -869,8 +875,52 @@ export async function getSellerListings(
         .map((image) => String(image.image_url ?? ""))
         .filter(Boolean),
       expiresAt: String(row.expires_at ?? ""),
+      quantity: Math.max(0, Number(row.quantity ?? 1)),
+      stockLocation: String(row.stock_location ?? ""),
     };
   });
+}
+
+export async function updateListingInventory(
+  session: AuthSession,
+  listingId: string,
+  quantity: number
+) {
+  requireUserSession(session);
+  const userId = session.user!.id;
+  const safeQuantity = Math.max(0, Math.floor(quantity));
+
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(listingId)}&seller_id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ quantity: safeQuantity }),
+    }
+  );
+
+  return safeQuantity;
+}
+
+export async function updateListingStockLocation(
+  session: AuthSession,
+  listingId: string,
+  stockLocation: string
+) {
+  requireUserSession(session);
+  const userId = session.user!.id;
+  const cleanLocation = stockLocation.trim().slice(0, 180);
+  await supabaseFetch(
+    `/rest/v1/listings?id=eq.${encodeURIComponent(listingId)}&seller_id=eq.${encodeURIComponent(userId)}`,
+    session,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ stock_location: cleanLocation || null }),
+    }
+  );
+  return cleanLocation;
 }
 export async function getVisitingCardSignedUrl(
   session: AuthSession,

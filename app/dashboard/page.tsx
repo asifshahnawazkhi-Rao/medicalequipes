@@ -6,6 +6,8 @@ import {
   deleteListing,
   getSellerListings,
   updateListingStatus,
+  updateListingInventory,
+  updateListingStockLocation,
   type SellerListing,
   renewListing,
   getSellerListingAnalytics,
@@ -44,6 +46,8 @@ export default function Dashboard() {
 >([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [gallery, setGallery] = useState<{ title: string; images: string[]; index: number } | null>(null);
+  const [savingQuantityId, setSavingQuantityId] = useState<string | null>(null);
+  const [savingLocationId, setSavingLocationId] = useState<string | null>(null);
 
   useEffect(() => {
   const session = getStoredSession();
@@ -141,6 +145,13 @@ const engagementTotals = useMemo(() => {
     }
   );
 }, [analytics]);
+const inventoryTotals = useMemo(() => listings.reduce((totals, listing) => {
+  if (listing.status !== "sold" && listing.status !== "draft") {
+    totals.units += listing.quantity;
+    totals.value += listing.quantity * listing.price;
+  }
+  return totals;
+}, { units: 0, value: 0 }), [listings]);
 const filteredListings = useMemo(() => {
   let statusListings = listings;
 
@@ -178,7 +189,7 @@ const filteredListings = useMemo(() => {
 
   return statusListings.filter((listing) =>
     normalizeListingSearch(
-      `${listing.title} ${listing.condition} ${listing.city}`
+      `${listing.title} ${listing.condition} ${listing.city} ${listing.stockLocation}`
     ).includes(normalizedSearch)
   );
 }, [listings, filter, listingSearch]);
@@ -186,6 +197,33 @@ const filteredListings = useMemo(() => {
 function logout() {
   clearSession();
   window.location.assign("/");
+}
+async function handleQuantityChange(listing: SellerListing, quantity: number) {
+  const session = getStoredSession();
+  if (!session?.access_token) { window.location.replace("/"); return; }
+  const nextQuantity = Math.max(0, Math.floor(quantity));
+  try {
+    setSavingQuantityId(listing.id);
+    await updateListingInventory(session, listing.id, nextQuantity);
+    setListings((current) => current.map((item) => item.id === listing.id ? { ...item, quantity: nextQuantity } : item));
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : "Could not update inventory quantity.");
+  } finally {
+    setSavingQuantityId(null);
+  }
+}
+async function handleStockLocationSave(listing: SellerListing, stockLocation: string) {
+  const session = getStoredSession();
+  if (!session?.access_token) { window.location.replace("/"); return; }
+  try {
+    setSavingLocationId(listing.id);
+    const savedLocation = await updateListingStockLocation(session, listing.id, stockLocation);
+    setListings((current) => current.map((item) => item.id === listing.id ? { ...item, stockLocation: savedLocation } : item));
+  } catch (error) {
+    window.alert(error instanceof Error ? error.message : "Could not update stock location.");
+  } finally {
+    setSavingLocationId(null);
+  }
 }
 async function handleRequirementStatus(id: string, status: Requirement["status"]) {
   const session = getStoredSession();
@@ -373,11 +411,11 @@ function getAnalytics(listingId: string) {
               SELLER DASHBOARD
             </span>
 
-            <h1>My Listings</h1>
+            <h1>My Inventory</h1>
 
             <p>
               Welcome{email ? `, ${email}` : ""}. Manage
-              your marketplace equipment listings.
+              your marketplace listings and available stock.
             </p>
           </div>
 
@@ -466,6 +504,16 @@ function getAnalytics(listingId: string) {
               <div className="dashboardStatCard">
                 <span>Total Listings</span>
                 <strong>{counts.total}</strong>
+              </div>
+
+              <div className="dashboardStatCard">
+                <span>Available Units</span>
+                <strong>{inventoryTotals.units}</strong>
+              </div>
+
+              <div className="dashboardStatCard">
+                <span>Stock Value</span>
+                <strong>Rs. {inventoryTotals.value.toLocaleString("en-PK")}</strong>
               </div>
 
               <div className="dashboardStatCard">
@@ -715,6 +763,30 @@ function getAnalytics(listingId: string) {
   </span>
 </div>
 
+<div className="inventoryQuantity">
+  <span>Available quantity</span>
+  <div>
+    <button type="button" disabled={savingQuantityId === listing.id || listing.quantity <= 0} onClick={() => handleQuantityChange(listing, listing.quantity - 1)} aria-label={`Reduce ${listing.title} quantity`}>−</button>
+    <input type="number" min="0" step="1" value={listing.quantity} disabled={savingQuantityId === listing.id} onChange={(event) => {
+      const quantity = Math.max(0, Number(event.target.value || 0));
+      setListings((current) => current.map((item) => item.id === listing.id ? { ...item, quantity } : item));
+    }} onBlur={(event) => handleQuantityChange(listing, Number(event.target.value || 0))} aria-label={`Available quantity for ${listing.title}`} />
+    <button type="button" disabled={savingQuantityId === listing.id} onClick={() => handleQuantityChange(listing, listing.quantity + 1)} aria-label={`Increase ${listing.title} quantity`}>+</button>
+  </div>
+  <small>{savingQuantityId === listing.id ? "Saving..." : listing.quantity === 0 ? "No units available" : `Stock value: Rs. ${(listing.quantity * listing.price).toLocaleString("en-PK")}`}</small>
+</div>
+
+<label className="inventoryLocation">
+  <span>Stock location</span>
+  <div>
+    <input type="text" maxLength={180} value={listing.stockLocation} disabled={savingLocationId === listing.id} placeholder="e.g. Warehouse A, Rack 3" onChange={(event) => {
+      const stockLocation = event.target.value;
+      setListings((current) => current.map((item) => item.id === listing.id ? { ...item, stockLocation } : item));
+    }} onBlur={(event) => handleStockLocationSave(listing, event.target.value)} />
+    <button type="button" disabled={savingLocationId === listing.id} onClick={() => handleStockLocationSave(listing, listing.stockLocation)}>{savingLocationId === listing.id ? "Saving..." : "Save"}</button>
+  </div>
+</label>
+
 <div className="dashboardListingActions">
                     <a
                       href={`/listing/${listing.id}`}
@@ -840,4 +912,3 @@ function getAnalytics(listingId: string) {
     </main>
   );
 }
-
