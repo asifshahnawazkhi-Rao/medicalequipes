@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [filter, setFilter] = useState<ListingFilter>("all");
   const [listingSearch, setListingSearch] = useState("");
+  const [selectedStockLocation, setSelectedStockLocation] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<
   ListingAnalytics[]
 >([]);
@@ -152,6 +153,23 @@ const inventoryTotals = useMemo(() => listings.reduce((totals, listing) => {
   }
   return totals;
 }, { units: 0, value: 0 }), [listings]);
+const locationInventory = useMemo(() => {
+  const locations = new Map<string, { name: string; quantity: number; listings: number }>();
+
+  listings.forEach((listing) => {
+    if (listing.status === "sold" || listing.status === "draft") return;
+    const name = listing.stockLocation.trim() || "Location not set";
+    const key = name.toLocaleLowerCase();
+    const current = locations.get(key) ?? { name, quantity: 0, listings: 0 };
+    current.quantity += listing.quantity;
+    current.listings += 1;
+    locations.set(key, current);
+  });
+
+  return Array.from(locations.values()).sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { numeric: true })
+  );
+}, [listings]);
 const filteredListings = useMemo(() => {
   let statusListings = listings;
 
@@ -184,6 +202,13 @@ const filteredListings = useMemo(() => {
     );
   }
 
+  if (selectedStockLocation) {
+    statusListings = statusListings.filter((listing) => {
+      const location = listing.stockLocation.trim() || "Location not set";
+      return location.toLocaleLowerCase() === selectedStockLocation.toLocaleLowerCase();
+    });
+  }
+
   const normalizedSearch = normalizeListingSearch(listingSearch);
   if (!normalizedSearch) return statusListings;
 
@@ -192,7 +217,7 @@ const filteredListings = useMemo(() => {
       `${listing.title} ${listing.condition} ${listing.city} ${listing.stockLocation}`
     ).includes(normalizedSearch)
   );
-}, [listings, filter, listingSearch]);
+}, [listings, filter, listingSearch, selectedStockLocation]);
 
 function logout() {
   clearSession();
@@ -500,6 +525,7 @@ function getAnalytics(listingId: string) {
 
         {!loading && (
           <>
+            <div className="dashboardInventoryOverview">
             <section className="dashboardStats">
               <div className="dashboardStatCard">
                 <span>Total Listings</span>
@@ -548,7 +574,48 @@ function getAnalytics(listingId: string) {
   <span>Total Favorites</span>
   <strong>{engagementTotals.favorites}</strong>
 </div>
-       </section>
+            </section>
+            <aside className="locationInventoryPanel">
+              <div className="locationInventoryHead">
+                <div>
+                  <span className="eyebrow">STOCK LOCATIONS</span>
+                  <h2>Location Inventory</h2>
+                </div>
+                {selectedStockLocation && (
+                  <button type="button" onClick={() => setSelectedStockLocation(null)}>Show all</button>
+                )}
+              </div>
+              {locationInventory.length ? (
+                <div className="locationInventoryList">
+                  {locationInventory.map((location) => (
+                    <div className={selectedStockLocation?.toLocaleLowerCase() === location.name.toLocaleLowerCase() ? "active" : ""} key={location.name}>
+                      <span><strong>{location.name}</strong><small>{location.listings} listing{location.listings === 1 ? "" : "s"}</small></span>
+                      <button
+                        type="button"
+                        aria-label={`Show ${location.quantity} units stored at ${location.name}`}
+                        onClick={() => {
+                          setSelectedStockLocation(location.name);
+                          setFilter("all");
+                          setListingSearch("");
+                        }}
+                      >
+                        <strong>{location.quantity}</strong>
+                        <small>Qty</small>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="locationInventoryEmpty">Add a stock location to a listing to see location totals here.</p>
+              )}
+            </aside>
+            </div>
+            {selectedStockLocation && (
+              <div className="locationInventorySelection">
+                Showing inventory stored at <strong>{selectedStockLocation}</strong>
+                <button type="button" onClick={() => setSelectedStockLocation(null)}>Clear location</button>
+              </div>
+            )}
             <div className="dashboardListingSearch">
               <label htmlFor="dashboard-listing-search">Find in my listings</label>
               <div>
