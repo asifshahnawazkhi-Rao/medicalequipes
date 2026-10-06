@@ -42,6 +42,7 @@ sellerPhone: string;
 sellerStatus: string;
   sellerVisitingCardUrl: string;
   status: string;
+  brochureUrl: string;
 };
 
 export default function ListingPage({
@@ -408,6 +409,13 @@ export default function ListingPage({
               <h2>Description</h2>
               <p>{listing.description || "No description provided."}</p>
             </div>
+
+            {listing.brochureUrl && (
+              <a className="listingBrochureButton" href={listing.brochureUrl} target="_blank" rel="noreferrer">
+                <span>PDF</span>
+                <strong>View equipment brochure</strong>
+              </a>
+            )}
           </section>
         </div>
 

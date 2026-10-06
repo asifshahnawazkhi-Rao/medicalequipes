@@ -10,6 +10,7 @@ import {
   getManagedSellers,
   saveListingImages,
   updateProfile,
+  uploadListingBrochure,
   uploadListingImage,
   type CategoryOption,
   type ManagedSeller,
@@ -18,6 +19,7 @@ import {
 const conditions = ["New", "Like New", "Used", "Refurbished", "Demo"];
 const maxFileSize = 5 * 1024 * 1024;
 const maxFiles = 8;
+const maxPdfSize = 10 * 1024 * 1024;
 const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
 function SelectedPhoto({
@@ -59,6 +61,7 @@ export default function SellEquipmentPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [brochureFile, setBrochureFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,6 +87,7 @@ const [sellerApproved, setSellerApproved] = useState(false);
   const [managedSellerId, setManagedSellerId] = useState("");
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const brochureInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingIndex === null || !files[editingIndex]) {
@@ -166,6 +170,17 @@ const [sellerApproved, setSellerApproved] = useState(false);
       return;
     }
     setFiles(next);
+  }
+
+  function onBrochureSelected(selected: FileList | null) {
+    setError("");
+    const file = selected?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" || file.size > maxPdfSize) {
+      setError(`${file.name} must be a PDF file up to 10MB.`);
+      return;
+    }
+    setBrochureFile(file);
   }
 
   function openImageEditor(index: number) {
@@ -348,6 +363,11 @@ if (!session || !sellerApproved) {
       setMessage("Saving image records...");
       await saveListingImages(session, listing.id, uploaded);
 
+      if (brochureFile) {
+        setMessage("Uploading PDF brochure...");
+        await uploadListingBrochure(session, listing.id, brochureFile);
+      }
+
       setMessage("Sharing listing on Facebook...");
       const facebookResponse = await fetch("/api/facebook/publish-listing", {
         method: "POST",
@@ -448,7 +468,23 @@ if (!sellerApproved) {
       <section className="container sellFormWrap">
         <form className="sellForm" onSubmit={submit}>
           <div className="formSection"><h2>Equipment details</h2><p className="helpText">Listing title is created from Brand + Model.</p>{isAdmin && <label className="managedSellerPicker">Post on behalf of seller<select name="managedSellerId" value={managedSellerId} onChange={(event) => setManagedSellerId(event.target.value)}><option value="">My admin account</option>{managedSellers.map((seller) => <option key={seller.id} value={seller.id}>{seller.companyName} — {seller.city}</option>)}</select><small>Select a seller created in Admin Dashboard.</small></label>}<div className="formGrid"><label>Brand / product name *<input name="brand" required placeholder="GE Ultrasound, Mindray Patient Monitor" /></label><label>Model *<input name="model" required placeholder="Model number/name" /></label><label>Condition *<select name="condition" required><option value="">Select condition</option>{conditions.map((condition) => <option key={condition}>{condition}</option>)}</select></label><label>Available quantity *<input name="quantity" type="number" min="0" step="1" defaultValue="1" required /></label><label>Price (PKR){!priceOnRequest && " *"}<input name="price" type="number" min="1" step="1" required={!priceOnRequest} disabled={priceOnRequest} placeholder={priceOnRequest ? "Ask for Price" : "1250000"} /><span className="priceRequestOption"><input type="checkbox" checked={priceOnRequest} onChange={(event) => setPriceOnRequest(event.target.checked)} /> Ask for Price</span></label><label>Location / city *<input key={`city-${managedSellerId}`} name="city" required defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.city || ""} placeholder="Karachi" /></label><label>Contact name<input key={`name-${managedSellerId}`} name="contactName" defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.contactPerson || managedSellers.find((seller) => seller.id === managedSellerId)?.companyName || ""} placeholder="Seller or business name" /></label><label>Contact phone *<span className="phoneField"><span className="phonePrefix">+92</span><input key={`phone-${managedSellerId}`} name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" maxLength={11} defaultValue={managedSellers.find((seller) => seller.id === managedSellerId)?.phone.replace(/^\+92/, "0") || ""} placeholder="03XXXXXXXXX" title="Enter 11 digits starting with 03" /></span></label></div><label>Description *<textarea name="description" required rows={7} placeholder="Describe specifications, age, warranty, included accessories, service history, and pickup/shipping details." /></label></div>
-          <div className="formSection"><h2>Equipment photos</h2><p className="helpText">Add 1-{maxFiles} JPG, PNG, or WebP images. Each image must be 5MB or smaller.</p><div className="photoPicker"><button className="photoPickerButton" type="button" onClick={() => setPhotoPickerOpen((open) => !open)}>Choose Files <span>▾</span></button>{photoPickerOpen && <div className="photoPickerMenu"><button type="button" onClick={() => { setPhotoPickerOpen(false); cameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button><button type="button" onClick={() => { setPhotoPickerOpen(false); galleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select one or more existing photos</small></button></div>}<input ref={cameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /><input ref={galleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" multiple onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} /></div>{files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}</div>
+          <div className="formSection">
+            <h2>Equipment photos & brochure</h2>
+            <p className="helpText">Add 1-{maxFiles} JPG, PNG, or WebP images (maximum 5MB each), plus one optional PDF brochure up to 10MB.</p>
+            <div className="photoPicker">
+              <button className="photoPickerButton" type="button" onClick={() => setPhotoPickerOpen((open) => !open)}>Choose Files <span>▾</span></button>
+              {photoPickerOpen && <div className="photoPickerMenu">
+                <button type="button" onClick={() => { setPhotoPickerOpen(false); cameraInputRef.current?.click(); }}><strong>📷 Take Photo</strong><small>Open your phone camera</small></button>
+                <button type="button" onClick={() => { setPhotoPickerOpen(false); galleryInputRef.current?.click(); }}><strong>▧ Choose from Gallery</strong><small>Select one or more existing photos</small></button>
+                <button type="button" onClick={() => { setPhotoPickerOpen(false); brochureInputRef.current?.click(); }}><strong>PDF Add Brochure</strong><small>Select one PDF file, maximum 10MB</small></button>
+              </div>}
+              <input ref={cameraInputRef} className="visuallyHiddenFile" type="file" accept="image/*" capture="environment" onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} />
+              <input ref={galleryInputRef} className="visuallyHiddenFile" type="file" accept="image/*" multiple onChange={(event) => { onFilesSelected(event.target.files); event.target.value = ""; }} />
+              <input ref={brochureInputRef} className="visuallyHiddenFile" type="file" accept="application/pdf,.pdf" onChange={(event) => { onBrochureSelected(event.target.files); event.target.value = ""; }} />
+            </div>
+            {brochureFile && <div className="selectedBrochure"><span><strong>PDF {brochureFile.name}</strong><small>{(brochureFile.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" onClick={() => setBrochureFile(null)}>Remove</button></div>}
+            {files.length > 0 && <div className="selectedPhotoGrid">{files.map((file, index) => <SelectedPhoto key={`${file.name}-${file.lastModified}-${index}`} file={file} index={index} onEdit={() => openImageEditor(index)} onRemove={() => setFiles(files.filter((_, i) => i !== index))} />)}</div>}
+          </div>
           {progress > 0 && <div className="progress"><span style={{ width: `${progress}%` }} /></div>}
           {message && <div className="authMessage" role="status">{message}</div>}
           {error && <div className="formError" role="alert">{error}</div>}

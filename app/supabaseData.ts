@@ -412,6 +412,26 @@ export async function uploadListingImage(session: AuthSession, listingId: string
   const { url } = getSupabaseConfig();
   return { path, publicUrl: `${url}/storage/v1/object/public/listing-images/${path}` };
 }
+export async function uploadListingBrochure(session: AuthSession, listingId: string, file: File) {
+  requireUserSession(session);
+  if (file.type !== "application/pdf") throw new Error("Brochure must be a PDF file.");
+  const user = session.user!;
+  const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "") || "brochure.pdf";
+  const path = `${user.id}/${listingId}/brochure/${crypto.randomUUID()}-${safeName}`;
+  await supabaseFetch(`/storage/v1/object/listing-images/${path}`, session, {
+    method: "POST",
+    headers: { "Content-Type": "application/pdf", "x-upsert": "false" },
+    body: file,
+  });
+  const { url } = getSupabaseConfig();
+  const publicUrl = `${url}/storage/v1/object/public/listing-images/${path}`;
+  await supabaseFetch(`/rest/v1/listings?id=eq.${encodeURIComponent(listingId)}&seller_id=eq.${encodeURIComponent(user.id)}`, session, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ brochure_url: publicUrl }),
+  });
+  return publicUrl;
+}
 export async function uploadVisitingCard(
   session: AuthSession,
   file: File
@@ -744,6 +764,8 @@ export async function getListingById(
       : String(sellerProfile?.visiting_card_url ?? ""),
 
     status: String(row.status ?? "active"),
+
+    brochureUrl: String(row.brochure_url ?? ""),
 
     images,
   };
