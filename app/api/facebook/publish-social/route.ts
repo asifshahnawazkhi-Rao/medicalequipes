@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseConfig } from "../../../auth";
 import { publishSocialPost } from "../social-publisher";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const accessToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
