@@ -1,9 +1,12 @@
-import { publishInstagramImage } from "./instagram";
+import { publishInstagramImage, publishInstagramVideo } from "./instagram";
+
+export type SocialMediaType = "image" | "video" | "pdf";
 
 export type SocialPublishInput = {
   title: string;
   caption: string;
   imageUrl: string;
+  mediaType?: SocialMediaType;
   websiteUrl?: string;
   publishFacebook: boolean;
   publishInstagram: boolean;
@@ -46,10 +49,15 @@ export async function publishSocialPost(input: SocialPublishInput): Promise<Soci
   const caption = `${input.title.trim()}\n\n${input.caption.trim()}${input.websiteUrl?.trim() ? `\n\nLearn more: ${input.websiteUrl.trim()}` : ""}`;
   const facebook: SocialPublishResult["facebook"] = { status: input.publishFacebook ? "pending" : "not_selected" };
   const instagram: SocialPublishResult["instagram"] = { status: input.publishInstagram ? "pending" : "not_selected" };
+  const mediaType = input.mediaType || "image";
 
   if (input.publishFacebook) {
     try {
-      const result = await graphPost(`${pageId}/photos`, { url: input.imageUrl, caption, access_token: pageToken });
+      const result = mediaType === "video"
+        ? await graphPost(`${pageId}/videos`, { file_url: input.imageUrl, description: caption, access_token: pageToken })
+        : mediaType === "pdf"
+          ? await graphPost(`${pageId}/feed`, { message: caption, link: input.imageUrl, access_token: pageToken })
+          : await graphPost(`${pageId}/photos`, { url: input.imageUrl, caption, access_token: pageToken });
       facebook.status = "published";
       facebook.postId = String(result.post_id || result.id || "");
     } catch (error) {
@@ -60,7 +68,14 @@ export async function publishSocialPost(input: SocialPublishInput): Promise<Soci
 
   if (input.publishInstagram) {
     try {
-      const result = await publishInstagramImage(pageId, pageToken, input.imageUrl, caption);
+      if (mediaType === "pdf") {
+        instagram.status = "not_supported";
+        instagram.error = "Instagram does not support direct PDF posts. Select Facebook only or convert the PDF page to an image.";
+        return { facebook, instagram };
+      }
+      const result = mediaType === "video"
+        ? await publishInstagramVideo(pageId, pageToken, input.imageUrl, caption)
+        : await publishInstagramImage(pageId, pageToken, input.imageUrl, caption);
       instagram.status = "published";
       instagram.postId = result.postId;
     } catch (error) {

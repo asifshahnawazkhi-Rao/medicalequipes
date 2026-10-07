@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json() as {
       title?: string; caption?: string; imageUrl?: string; websiteUrl?: string;
+      mediaType?: "image" | "video" | "pdf";
       publishFacebook?: boolean; publishInstagram?: boolean;
     };
     if (!body.title?.trim() || !body.caption?.trim() || !body.imageUrl?.trim()) {
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
       title: body.title,
       caption: body.caption,
       imageUrl: body.imageUrl,
+      mediaType: body.mediaType || "image",
       websiteUrl: body.websiteUrl,
       publishFacebook: Boolean(body.publishFacebook),
       publishInstagram: Boolean(body.publishInstagram),

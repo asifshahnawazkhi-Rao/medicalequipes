@@ -5,6 +5,7 @@ create table if not exists public.social_posts (
   title text not null,
   caption text not null,
   image_url text not null,
+  media_type text not null default 'image' check (media_type in ('image', 'video', 'pdf')),
   website_url text,
   publish_facebook boolean not null default true,
   publish_instagram boolean not null default true,
@@ -23,6 +24,7 @@ create table if not exists public.social_posts (
 );
 
 alter table public.social_posts add column if not exists scheduled_at timestamptz;
+alter table public.social_posts add column if not exists media_type text not null default 'image';
 alter table public.social_posts add column if not exists schedule_status text not null default 'published';
 alter table public.social_posts add column if not exists attempts integer not null default 0;
 alter table public.social_posts add column if not exists last_attempt_at timestamptz;

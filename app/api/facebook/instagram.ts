@@ -75,3 +75,26 @@ export async function publishInstagramImage(
   });
   return { instagramId, postId: String(published.id ?? "") };
 }
+
+export async function publishInstagramVideo(
+  pageId: string,
+  accessToken: string,
+  videoUrl: string,
+  caption: string
+) {
+  const instagramId = await resolveInstagramBusinessId(pageId, accessToken);
+  const container = await graphRequest(`${instagramId}/media`, {
+    media_type: "REELS",
+    video_url: videoUrl,
+    caption: caption.slice(0, 2200),
+    share_to_feed: "true",
+    access_token: accessToken,
+  });
+  if (!container.id) throw new Error("Instagram video container was not created.");
+  await waitForMediaContainer(String(container.id), accessToken);
+  const published = await graphRequest(`${instagramId}/media_publish`, {
+    creation_id: String(container.id),
+    access_token: accessToken,
+  });
+  return { instagramId, postId: String(published.id ?? "") };
+}
