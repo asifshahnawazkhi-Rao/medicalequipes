@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       websiteUrl: body.websiteUrl,
       publishFacebook: Boolean(body.publishFacebook),
       publishInstagram: Boolean(body.publishInstagram),
+      deferInstagramVideo: body.mediaType === "video" && Boolean(body.publishInstagram),
     });
 
     return NextResponse.json({ ok: facebook.status === "published" || instagram.status === "published", facebook, instagram });

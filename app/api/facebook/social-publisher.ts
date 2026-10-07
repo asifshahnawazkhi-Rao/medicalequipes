@@ -1,4 +1,4 @@
-import { publishInstagramImage, publishInstagramVideo } from "./instagram";
+import { createInstagramVideoContainer, publishInstagramImage, publishInstagramVideo } from "./instagram";
 
 export type SocialMediaType = "image" | "video" | "pdf";
 
@@ -10,11 +10,12 @@ export type SocialPublishInput = {
   websiteUrl?: string;
   publishFacebook: boolean;
   publishInstagram: boolean;
+  deferInstagramVideo?: boolean;
 };
 
 export type SocialPublishResult = {
   facebook: { status: string; postId?: string; error?: string };
-  instagram: { status: string; postId?: string; error?: string };
+  instagram: { status: string; postId?: string; error?: string; containerId?: string; instagramId?: string };
 };
 
 async function graphPost(path: string, values: Record<string, string>) {
@@ -40,12 +41,15 @@ async function resolvePageAccessToken(pageId: string, storedToken: string) {
   return data.data.find((item: { id?: string; access_token?: string }) => String(item.id ?? "") === pageId)?.access_token || storedToken;
 }
 
-export async function publishSocialPost(input: SocialPublishInput): Promise<SocialPublishResult> {
+export async function getSocialPageCredentials() {
   const pageId = process.env.FACEBOOK_PAGE_ID;
   const storedToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
   if (!pageId || !storedToken) throw new Error("Meta publishing is not configured.");
+  return { pageId, pageToken: await resolvePageAccessToken(pageId, storedToken) };
+}
 
-  const pageToken = await resolvePageAccessToken(pageId, storedToken);
+export async function publishSocialPost(input: SocialPublishInput): Promise<SocialPublishResult> {
+  const { pageId, pageToken } = await getSocialPageCredentials();
   const caption = `${input.title.trim()}\n\n${input.caption.trim()}${input.websiteUrl?.trim() ? `\n\nLearn more: ${input.websiteUrl.trim()}` : ""}`;
   const facebook: SocialPublishResult["facebook"] = { status: input.publishFacebook ? "pending" : "not_selected" };
   const instagram: SocialPublishResult["instagram"] = { status: input.publishInstagram ? "pending" : "not_selected" };
@@ -74,10 +78,18 @@ export async function publishSocialPost(input: SocialPublishInput): Promise<Soci
         return { facebook, instagram };
       }
       const result = mediaType === "video"
-        ? await publishInstagramVideo(pageId, pageToken, input.imageUrl, caption)
+        ? input.deferInstagramVideo
+          ? await createInstagramVideoContainer(pageId, pageToken, input.imageUrl, caption)
+          : await publishInstagramVideo(pageId, pageToken, input.imageUrl, caption)
         : await publishInstagramImage(pageId, pageToken, input.imageUrl, caption);
-      instagram.status = "published";
-      instagram.postId = result.postId;
+      if (mediaType === "video" && input.deferInstagramVideo && "containerId" in result) {
+        instagram.status = "processing";
+        instagram.containerId = result.containerId;
+        instagram.instagramId = result.instagramId;
+      } else {
+        instagram.status = "published";
+        instagram.postId = "postId" in result ? result.postId : undefined;
+      }
     } catch (error) {
       instagram.status = "failed";
       instagram.error = error instanceof Error ? error.message : "Instagram publishing failed.";

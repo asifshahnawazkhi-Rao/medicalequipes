@@ -41,6 +41,47 @@ async function waitForMediaContainer(containerId: string, accessToken: string) {
   throw new Error("Instagram image processing timed out. Please try publishing again.");
 }
 
+export async function createInstagramVideoContainer(
+  pageId: string,
+  accessToken: string,
+  videoUrl: string,
+  caption: string
+) {
+  const instagramId = await resolveInstagramBusinessId(pageId, accessToken);
+  const container = await graphRequest(`${instagramId}/media`, {
+    media_type: "REELS",
+    video_url: videoUrl,
+    caption: caption.slice(0, 2200),
+    share_to_feed: "true",
+    access_token: accessToken,
+  });
+  if (!container.id) throw new Error("Instagram video container was not created.");
+  return { instagramId, containerId: String(container.id) };
+}
+
+export async function publishInstagramVideoContainer(
+  instagramId: string,
+  containerId: string,
+  accessToken: string
+) {
+  const container = await graphGet(containerId, {
+    fields: "status_code,status",
+    access_token: accessToken,
+  });
+  const statusCode = String(container.status_code ?? "").toUpperCase();
+  if (statusCode === "ERROR" || statusCode === "EXPIRED") {
+    throw new Error(String(container.status ?? "Instagram could not process the video."));
+  }
+  if (statusCode !== "FINISHED" && statusCode !== "PUBLISHED") {
+    return { status: "processing" as const };
+  }
+  const published = await graphRequest(`${instagramId}/media_publish`, {
+    creation_id: containerId,
+    access_token: accessToken,
+  });
+  return { status: "published" as const, postId: String(published.id ?? "") };
+}
+
 export async function resolveInstagramBusinessId(pageId: string, accessToken: string) {
   const url = new URL(`https://graph.facebook.com/${GRAPH_VERSION}/${pageId}`);
   url.searchParams.set("fields", "instagram_business_account{id,username}");
@@ -82,18 +123,10 @@ export async function publishInstagramVideo(
   videoUrl: string,
   caption: string
 ) {
-  const instagramId = await resolveInstagramBusinessId(pageId, accessToken);
-  const container = await graphRequest(`${instagramId}/media`, {
-    media_type: "REELS",
-    video_url: videoUrl,
-    caption: caption.slice(0, 2200),
-    share_to_feed: "true",
-    access_token: accessToken,
-  });
-  if (!container.id) throw new Error("Instagram video container was not created.");
-  await waitForMediaContainer(String(container.id), accessToken);
+  const { instagramId, containerId } = await createInstagramVideoContainer(pageId, accessToken, videoUrl, caption);
+  await waitForMediaContainer(containerId, accessToken);
   const published = await graphRequest(`${instagramId}/media_publish`, {
-    creation_id: String(container.id),
+    creation_id: containerId,
     access_token: accessToken,
   });
   return { instagramId, postId: String(published.id ?? "") };

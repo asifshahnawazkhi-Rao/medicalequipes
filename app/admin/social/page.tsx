@@ -6,7 +6,7 @@ import styles from "./page.module.css";
 
 type MediaType = "image"|"video"|"pdf";
 type SocialPost = { id:string; post_type:string; title:string; image_url:string; media_type?:MediaType; facebook_status:string; instagram_status:string; schedule_status?:string; scheduled_at?:string|null; created_at:string };
-type PublishResult = { error?:string; facebook:{status:string;postId?:string;error?:string}; instagram:{status:string;postId?:string;error?:string} };
+type PublishResult = { error?:string; facebook:{status:string;postId?:string;error?:string}; instagram:{status:string;postId?:string;error?:string;containerId?:string;instagramId?:string} };
 
 async function api(path:string, session:AuthSession, init:RequestInit={}) {
   const {url,key}=getSupabaseConfig(); const headers=new Headers(init.headers);
@@ -37,6 +37,11 @@ export default function AdminSocialPage(){
       }else{
         setMessage("Publishing..."); const response=await fetch("/api/facebook/publish-social",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({title:data.get("title"),caption:data.get("caption"),websiteUrl:data.get("websiteUrl"),imageUrl,mediaType,publishFacebook:fb,publishInstagram:ig})});
         const responseText=await response.text(); let result:PublishResult; try{result=JSON.parse(responseText) as PublishResult;}catch{throw new Error(response.status===504||response.status===502?"Publishing took too long. The media was uploaded; please try Publish Now again.":`Publishing service returned an invalid response (HTTP ${response.status}). Please try again after the Netlify deployment finishes.`);} if(!response.ok)throw new Error(result.error||"Publishing failed.");
+        if(mediaType==="video"&&ig&&result.instagram.status==="processing"&&result.instagram.containerId&&result.instagram.instagramId){
+          setMessage("Instagram is processing the video. Please keep this page open..."); let published=false;
+          for(let attempt=0;attempt<40;attempt+=1){await new Promise((resolve)=>setTimeout(resolve,3000)); const check=await fetch("/api/facebook/publish-instagram-video",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({containerId:result.instagram.containerId,instagramId:result.instagram.instagramId})}); const checkText=await check.text(); let checked:{status?:string;postId?:string;error?:string}; try{checked=JSON.parse(checkText);}catch{throw new Error(`Instagram status service returned an invalid response (HTTP ${check.status}).`);} if(!check.ok)throw new Error(checked.error||"Instagram video processing failed."); if(checked.status==="published"){result.instagram.status="published";result.instagram.postId=checked.postId;published=true;break;}}
+          if(!published)throw new Error("Instagram is still processing this video. Please wait a few minutes before trying again.");
+        }
         const record={...base,facebook_status:result.facebook.status,instagram_status:result.instagram.status,facebook_post_id:result.facebook.postId||null,instagram_post_id:result.instagram.postId||null,facebook_error:result.facebook.error||null,instagram_error:result.instagram.error||null,schedule_status:"published",published_at:new Date().toISOString()}; try{const saved=await api("/rest/v1/social_posts?select=*",session,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(record)});setPosts((old)=>[saved[0],...old]);}catch{}
         setMessage(`${fb?`Facebook: ${result.facebook.status}`:""}${fb&&ig?" · ":""}${ig?`Instagram: ${result.instagram.status}`:""}`); if(result.facebook.status==="failed"||result.instagram.status==="failed")setError([result.facebook.error,result.instagram.error].filter(Boolean).join(" "));
       }
