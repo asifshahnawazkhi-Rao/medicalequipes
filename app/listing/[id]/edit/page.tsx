@@ -467,30 +467,56 @@ async function moveExistingImage(
         );
       }
 
-      setMessage("Updating Facebook post...");
-      const facebookResponse = await fetch("/api/facebook/publish-listing", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ listingId, action: "update" }),
-      });
-      const facebookResult = await facebookResponse.json().catch(() => ({}));
+      setMessage("Listing saved. Updating Facebook post...");
 
-      setMessage(
-        facebookResponse.ok
-          ? facebookResult.updated
-            ? "Listing and existing Facebook post updated successfully."
-            : "Listing updated and shared on Facebook."
-          : `Listing updated successfully. Facebook update could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
-      );
+      let facebookUpdated = false;
+
+      try {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(
+          () => controller.abort(),
+          25000
+        );
+
+        const facebookResponse = await fetch(
+          "/api/facebook/publish-listing",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ listingId, action: "update" }),
+            signal: controller.signal,
+          }
+        );
+
+        window.clearTimeout(timeout);
+
+        const facebookResult = await facebookResponse
+          .json()
+          .catch(() => ({}));
+
+        facebookUpdated = facebookResponse.ok;
+
+        setMessage(
+          facebookResponse.ok
+            ? facebookResult.updated
+              ? "Listing, photos and existing Facebook post updated successfully."
+              : "Listing and photos updated and shared on Facebook."
+            : `Listing and photos saved successfully. Facebook update could not finish${facebookResult?.error ? `: ${facebookResult.error}` : "."}`
+        );
+      } catch {
+        setMessage(
+          "Listing and photos saved successfully. Facebook update could not finish; you can retry it later."
+        );
+      }
 
       window.setTimeout(() => {
         window.location.assign(
           `/listing/${listingId}`
         );
-      }, facebookResponse.ok ? 1200 : 3000);
+      }, facebookUpdated ? 1200 : 3000);
     } catch (err) {
       setMessage("");
 
