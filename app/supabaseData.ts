@@ -456,24 +456,35 @@ export async function getPublicListings(
 }
 export async function uploadListingImage(session: AuthSession, listingId: string, file: File) {
   requireUserSession(session);
-  const user = session.user!;
-  const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "") || "image";
-  const path = `${user.id}/${listingId}/${crypto.randomUUID()}-${safeName}`;
-  let uploaded = false;
+  const form = new FormData();
+  form.set("listingId", listingId);
+  form.set("file", file);
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      await supabaseFetch(`/storage/v1/object/listing-images/${path}`, session, {
+      const response = await fetch("/api/listings/upload-image", {
         method: "POST",
-        headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "true" },
-        body: file,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: form,
       });
-      uploaded = true;
-      break;
+
+      const text = await response.text();
+      const result = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(result.error || `Upload failed (${response.status}).`);
+      }
+
+      return {
+        path: String(result.path ?? ""),
+        publicUrl: String(result.publicUrl ?? ""),
+      };
     } catch (error) {
       if (attempt === 2) {
         throw new Error(
-          error instanceof Error && error.message !== "Failed to fetch"
+          error instanceof Error && !/failed to fetch/i.test(error.message)
             ? `Could not upload ${file.name}: ${error.message}`
             : `Could not upload ${file.name}. Please check your internet and try again.`
         );
@@ -483,9 +494,7 @@ export async function uploadListingImage(session: AuthSession, listingId: string
     }
   }
 
-  if (!uploaded) throw new Error(`Could not upload ${file.name}.`);
-  const { url } = getSupabaseConfig();
-  return { path, publicUrl: `${url}/storage/v1/object/public/listing-images/${path}` };
+  throw new Error(`Could not upload ${file.name}.`);
 }
 export async function uploadListingBrochure(session: AuthSession, listingId: string, file: File) {
   requireUserSession(session);
