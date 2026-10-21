@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!accessToken) return NextResponse.json({ error: "Admin session is missing." }, { status: 401 });
 
     const body = await request.json() as {
-      title?: string; caption?: string; imageUrl?: string; websiteUrl?: string;
+      title?: string; caption?: string; imageUrl?: string; imageUrls?: string[]; websiteUrl?: string;
       mediaType?: "image" | "video" | "pdf";
       publishFacebook?: boolean; publishInstagram?: boolean;
     };
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
       title: body.title,
       caption: body.caption,
       imageUrl: body.imageUrl,
+      imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : undefined,
       mediaType: body.mediaType || "image",
       websiteUrl: body.websiteUrl,
       publishFacebook: Boolean(body.publishFacebook),

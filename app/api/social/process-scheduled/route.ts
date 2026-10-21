@@ -9,6 +9,7 @@ type ScheduledPost = {
   title: string;
   caption: string;
   image_url: string;
+  media_urls?: string[] | null;
   media_type?: "image" | "video" | "pdf";
   website_url?: string | null;
   publish_facebook: boolean;
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const { url } = getSupabaseConfig();
   const headers = serviceHeaders();
-  const dueUrl = `${url}/rest/v1/social_posts?select=id,title,caption,image_url,media_type,website_url,publish_facebook,publish_instagram,attempts&schedule_status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(new Date().toISOString())}&order=scheduled_at.asc&limit=10`;
+  const dueUrl = `${url}/rest/v1/social_posts?select=id,title,caption,image_url,media_urls,media_type,website_url,publish_facebook,publish_instagram,attempts&schedule_status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(new Date().toISOString())}&order=scheduled_at.asc&limit=10`;
   const dueResponse = await fetch(dueUrl, { headers, cache: "no-store" });
   const duePosts = await dueResponse.json().catch(() => []);
   if (!dueResponse.ok || !Array.isArray(duePosts)) {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
         title: post.title,
         caption: post.caption,
         imageUrl: post.image_url,
+        imageUrls: post.media_urls || undefined,
         mediaType: post.media_type || "image",
         websiteUrl: post.website_url || "",
         publishFacebook: post.publish_facebook,

@@ -1,4 +1,4 @@
-import { createInstagramVideoContainer, publishInstagramImage, publishInstagramVideo } from "./instagram";
+import { createInstagramVideoContainer, publishInstagramCarousel, publishInstagramImage, publishInstagramVideo } from "./instagram";
 
 export type SocialMediaType = "image" | "video" | "pdf";
 
@@ -6,6 +6,7 @@ export type SocialPublishInput = {
   title: string;
   caption: string;
   imageUrl: string;
+  imageUrls?: string[];
   mediaType?: SocialMediaType;
   websiteUrl?: string;
   publishFacebook: boolean;
@@ -54,10 +55,21 @@ export async function publishSocialPost(input: SocialPublishInput): Promise<Soci
   const facebook: SocialPublishResult["facebook"] = { status: input.publishFacebook ? "pending" : "not_selected" };
   const instagram: SocialPublishResult["instagram"] = { status: input.publishInstagram ? "pending" : "not_selected" };
   const mediaType = input.mediaType || "image";
+  const imageUrls = (input.imageUrls?.length ? input.imageUrls : [input.imageUrl]).slice(0, 10);
 
   if (input.publishFacebook) {
     try {
-      const result = mediaType === "video"
+      let result: Record<string, unknown>;
+      if (mediaType === "image" && imageUrls.length > 1) {
+        const photoIds: string[] = [];
+        for (const url of imageUrls) {
+          const photo = await graphPost(`${pageId}/photos`, { url, published: "false", access_token: pageToken });
+          if (photo.id) photoIds.push(String(photo.id));
+        }
+        const values: Record<string, string> = { message: caption, access_token: pageToken };
+        photoIds.forEach((id, index) => { values[`attached_media[${index}]`] = JSON.stringify({ media_fbid: id }); });
+        result = await graphPost(`${pageId}/feed`, values);
+      } else result = mediaType === "video"
         ? await graphPost(`${pageId}/videos`, { file_url: input.imageUrl, description: caption, access_token: pageToken })
         : mediaType === "pdf"
           ? await graphPost(`${pageId}/feed`, { message: caption, link: input.imageUrl, access_token: pageToken })
@@ -77,7 +89,9 @@ export async function publishSocialPost(input: SocialPublishInput): Promise<Soci
         instagram.error = "Instagram does not support direct PDF posts. Select Facebook only or convert the PDF page to an image.";
         return { facebook, instagram };
       }
-      const result = mediaType === "video"
+      const result = mediaType === "image" && imageUrls.length > 1
+        ? await publishInstagramCarousel(pageId, pageToken, imageUrls, caption)
+        : mediaType === "video"
         ? input.deferInstagramVideo
           ? await createInstagramVideoContainer(pageId, pageToken, input.imageUrl, caption)
           : await publishInstagramVideo(pageId, pageToken, input.imageUrl, caption)

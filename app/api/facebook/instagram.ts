@@ -117,6 +117,38 @@ export async function publishInstagramImage(
   return { instagramId, postId: String(published.id ?? "") };
 }
 
+export async function publishInstagramCarousel(
+  pageId: string,
+  accessToken: string,
+  imageUrls: string[],
+  caption: string
+) {
+  const instagramId = await resolveInstagramBusinessId(pageId, accessToken);
+  const childIds: string[] = [];
+  for (const imageUrl of imageUrls.slice(0, 10)) {
+    const child = await graphRequest(`${instagramId}/media`, {
+      image_url: imageUrl,
+      is_carousel_item: "true",
+      access_token: accessToken,
+    });
+    if (!child.id) throw new Error("An Instagram carousel image could not be prepared.");
+    childIds.push(String(child.id));
+  }
+  const carousel = await graphRequest(`${instagramId}/media`, {
+    media_type: "CAROUSEL",
+    children: childIds.join(","),
+    caption: caption.slice(0, 2200),
+    access_token: accessToken,
+  });
+  if (!carousel.id) throw new Error("Instagram carousel was not created.");
+  await waitForMediaContainer(String(carousel.id), accessToken);
+  const published = await graphRequest(`${instagramId}/media_publish`, {
+    creation_id: String(carousel.id),
+    access_token: accessToken,
+  });
+  return { instagramId, postId: String(published.id ?? "") };
+}
+
 export async function publishInstagramVideo(
   pageId: string,
   accessToken: string,
