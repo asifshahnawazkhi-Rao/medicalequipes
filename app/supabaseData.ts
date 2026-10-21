@@ -106,6 +106,8 @@ type OpenApiSchema = {
   components?: { schemas?: Record<string, { properties?: Record<string, unknown> }> };
 };
 
+const tableColumnCache = new Map<string, Set<string>>();
+
 const listingFields = {
   userId: ["user_id", "seller_id", "profile_id", "owner_id", "created_by"],
   category: ["category_id", "category"],
@@ -156,7 +158,32 @@ export async function supabaseFetch<T>(path: string, session?: AuthSession, init
   headers.set("Authorization", `Bearer ${session?.access_token ?? key}`);
   if (init.body && !headers.has("Content-Type") && typeof init.body === "string") headers.set("Content-Type", "application/json");
 
-  const response = await fetch(`${url}${path}`, { ...init, headers });
+  const method = String(init.method ?? "GET").toUpperCase();
+  const retryable = method === "GET" || method === "PATCH" || method === "PUT";
+  let response: Response | null = null;
+
+  for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
+    try {
+      response = await fetch(`${url}${path}`, { ...init, headers });
+      break;
+    } catch (error) {
+      if (attempt === (retryable ? 2 : 0)) {
+        throw new Error(
+          error instanceof TypeError
+            ? "Connection to the database was interrupted. Please check your internet and try again."
+            : error instanceof Error
+              ? error.message
+              : "Database request failed."
+        );
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, 700 * (attempt + 1))
+      );
+    }
+  }
+
+  if (!response) throw new Error("Database request failed.");
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
 
@@ -169,19 +196,46 @@ export async function supabaseFetch<T>(path: string, session?: AuthSession, init
 }
 
 async function tableColumns(session: AuthSession, table: string) {
+  const cached = tableColumnCache.get(table);
+  if (cached?.size) return cached;
+
   const fieldMap = table === "listings" ? listingFields : listingImageFields;
   const candidates = [...new Set(Object.values(fieldMap).flat())];
   const columns = new Set<string>();
 
-  for (const column of candidates) {
-    try {
-      await supabaseFetch<unknown[]>(
-        `/rest/v1/${table}?select=${encodeURIComponent(column)}&limit=0`,
-        session
-      );
-      columns.add(column);
-    } catch {
-      // Column does not exist or is not exposed; skip it.
+  try {
+    const schema = await supabaseFetch<OpenApiSchema>(
+      "/rest/v1/",
+      session,
+      {
+        headers: {
+          Accept: "application/openapi+json",
+        },
+      }
+    );
+
+    const properties =
+      schema.definitions?.[table]?.properties ??
+      schema.components?.schemas?.[table]?.properties;
+
+    for (const column of candidates) {
+      if (properties && column in properties) columns.add(column);
+    }
+  } catch {
+    // Fall back to individual checks for older PostgREST configurations.
+  }
+
+  if (!columns.size) {
+    for (const column of candidates) {
+      try {
+        await supabaseFetch<unknown[]>(
+          `/rest/v1/${table}?select=${encodeURIComponent(column)}&limit=0`,
+          session
+        );
+        columns.add(column);
+      } catch {
+        // Column does not exist or is not exposed; skip it.
+      }
     }
   }
 
@@ -191,6 +245,7 @@ async function tableColumns(session: AuthSession, table: string) {
     );
   }
 
+  tableColumnCache.set(table, columns);
   return columns;
 }
 
@@ -404,11 +459,31 @@ export async function uploadListingImage(session: AuthSession, listingId: string
   const user = session.user!;
   const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "") || "image";
   const path = `${user.id}/${listingId}/${crypto.randomUUID()}-${safeName}`;
-  await supabaseFetch(`/storage/v1/object/listing-images/${path}`, session, {
-    method: "POST",
-    headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "false" },
-    body: file,
-  });
+  let uploaded = false;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await supabaseFetch(`/storage/v1/object/listing-images/${path}`, session, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "true" },
+        body: file,
+      });
+      uploaded = true;
+      break;
+    } catch (error) {
+      if (attempt === 2) {
+        throw new Error(
+          error instanceof Error && error.message !== "Failed to fetch"
+            ? `Could not upload ${file.name}: ${error.message}`
+            : `Could not upload ${file.name}. Please check your internet and try again.`
+        );
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 900 * (attempt + 1)));
+    }
+  }
+
+  if (!uploaded) throw new Error(`Could not upload ${file.name}.`);
   const { url } = getSupabaseConfig();
   return { path, publicUrl: `${url}/storage/v1/object/public/listing-images/${path}` };
 }
