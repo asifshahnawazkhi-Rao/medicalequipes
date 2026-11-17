@@ -12,7 +12,7 @@ import {
   renewListing,
   getSellerListingAnalytics,
   ListingAnalytics,
-  getProfile,
+  ensureSellerProfile,
   getMyRequirements,
   updateRequirementStatus,
   type Requirement,
@@ -68,7 +68,7 @@ export default function Dashboard() {
         await Promise.all([
           getSellerListings(validSession),
           getSellerListingAnalytics(validSession),
-          getProfile(validSession),
+          ensureSellerProfile(validSession),
           getMyRequirements(validSession).catch(() => []),
         ]);
 

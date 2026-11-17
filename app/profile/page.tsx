@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { getStoredSession } from "../auth";
 import ImageCropEditor from "../ImageCropEditor";
 import {
-  getProfile,
+  ensureSellerProfile,
   getVisitingCardSignedUrl,
   updateProfile,
   uploadVisitingCard,
@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
     setEmail(session.user?.email ?? "");
 
-    getProfile(session)
+    ensureSellerProfile(session)
       .then((profile) => {
         if (!profile) return;
 

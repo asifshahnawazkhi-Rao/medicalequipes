@@ -6,10 +6,9 @@ import { getStoredSession, type AuthSession } from "../auth";
 import {
   createListing,
   getCategories,
-  getProfile,
+  ensureSellerProfile,
   getManagedSellers,
   saveListingImages,
-  updateProfile,
   uploadListingBrochure,
   uploadListingImage,
   type CategoryOption,
@@ -113,7 +112,7 @@ const [sellerApproved, setSellerApproved] = useState(false);
 
   async function loadSeller() {
     try {
-      const profile = await getProfile(
+      const profile = await ensureSellerProfile(
         authenticatedSession
       );
 
@@ -122,16 +121,6 @@ const [sellerApproved, setSellerApproved] = useState(false);
           "Please complete your seller profile before listing equipment."
         );
         return;
-      }
-
-      if (profile.role.toLowerCase() !== "admin" && (profile.status.toLowerCase() !== "approved" || profile.role.toLowerCase() !== "seller")) {
-        await updateProfile(authenticatedSession, {
-          fullName: profile.fullName,
-          phone: profile.phone,
-          businessName: profile.businessName,
-          city: profile.city,
-          visitingCardUrl: profile.visitingCardUrl,
-        });
       }
 
       setSellerApproved(true);
