@@ -6,7 +6,8 @@ import { getStoredSession, type AuthSession } from "../auth";
 import {
   createListing,
   getCategories,
-  ensureSellerProfile,
+  getSellerListings,
+  getProfile,
   getManagedSellers,
   saveListingImages,
   uploadListingBrochure,
@@ -112,11 +113,14 @@ const [sellerApproved, setSellerApproved] = useState(false);
 
   async function loadSeller() {
     try {
-      const profile = await ensureSellerProfile(
-        authenticatedSession
-      );
+      const profile = await getProfile(authenticatedSession).catch(() => null);
+      const role = profile?.role.toLowerCase() ?? "";
+      const recognizedProfile = role === "admin" || role === "seller";
+      const previousListings = recognizedProfile
+        ? []
+        : await getSellerListings(authenticatedSession).catch(() => []);
 
-      if (!profile) {
+      if (!recognizedProfile && !previousListings.length) {
         setError(
           "Please complete your seller profile before listing equipment."
         );
@@ -124,7 +128,7 @@ const [sellerApproved, setSellerApproved] = useState(false);
       }
 
       setSellerApproved(true);
-      const admin = profile.role.toLowerCase() === "admin";
+      const admin = role === "admin";
       setIsAdmin(admin);
       if (admin) setManagedSellers(await getManagedSellers(authenticatedSession));
 
