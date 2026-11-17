@@ -1,2 +1,2 @@
-MedicalEquipes deployment refresh: 2026-11-17 16:10 PKT
-Admin and permanent seller access fix included.
+MedicalEquipes JWT session refresh fix: 2026-11-17 16:22 PKT
+Admin and seller access recovery enabled.
