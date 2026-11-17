@@ -1,4 +1,4 @@
-import { AuthSession, getSupabaseConfig } from "./auth";
+import { AuthSession, getSupabaseConfig, refreshAuthSession } from "./auth";
 
 export type CategoryOption = { id: string; name: string };
 
@@ -184,8 +184,26 @@ export async function supabaseFetch<T>(path: string, session?: AuthSession, init
   }
 
   if (!response) throw new Error("Database request failed.");
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let text = await response.text();
+  let data = text ? JSON.parse(text) : null;
+
+  if (!response.ok && session?.refresh_token) {
+    const authMessage = String(
+      data?.message || data?.msg || data?.error_description || data?.error || ""
+    ).toLowerCase();
+    const invalidJwt =
+      authMessage.includes("jwt issued at future") ||
+      authMessage.includes("jwt expired") ||
+      authMessage.includes("invalid jwt");
+
+    if (invalidJwt) {
+      const refreshed = await refreshAuthSession(session);
+      headers.set("Authorization", `Bearer ${refreshed.access_token}`);
+      response = await fetch(`${url}${path}`, { ...init, headers });
+      text = await response.text();
+      data = text ? JSON.parse(text) : null;
+    }
+  }
 
   if (!response.ok) {
     const message = data?.message || data?.msg || data?.error_description || data?.error || `Supabase request failed (${response.status})`;
