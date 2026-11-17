@@ -99,22 +99,12 @@ export default function Dashboard() {
   }, [gallery]);
 
   const counts = useMemo(() => {
-  const expired = listings.filter((listing) => {
-    const days = getDaysRemaining(listing.expiresAt);
-
-    return (
-      listing.status === "active" &&
-      days !== null &&
-      days <= 0
-    );
-  }).length;
+  const expired = listings.filter(isListingExpired).length;
 
   const active = listings.filter((listing) => {
-    const days = getDaysRemaining(listing.expiresAt);
-
     return (
       listing.status === "active" &&
-      (days === null || days > 0)
+      !isListingExpired(listing)
     );
   }).length;
 
@@ -125,7 +115,9 @@ export default function Dashboard() {
       (listing) => listing.status === "sold"
     ).length,
     outOfStock: listings.filter(
-      (listing) => listing.status === "out_of_stock"
+      (listing) =>
+        listing.status === "out_of_stock" &&
+        !isListingExpired(listing)
     ).length,
     draft: listings.filter(
       (listing) => listing.status === "draft"
@@ -174,28 +166,20 @@ const filteredListings = useMemo(() => {
   let statusListings = listings;
 
   if (filter === "expired") {
-    statusListings = listings.filter((listing) => {
-      const days = getDaysRemaining(
-        listing.expiresAt
-      );
-
-      return (
-        listing.status === "active" &&
-        days !== null &&
-        days <= 0
-      );
-    });
+    statusListings = listings.filter(isListingExpired);
   } else if (filter === "active") {
     statusListings = listings.filter((listing) => {
-      const days = getDaysRemaining(
-        listing.expiresAt
-      );
-
       return (
         listing.status === "active" &&
-        (days === null || days > 0)
+        !isListingExpired(listing)
       );
     });
+  } else if (filter === "out_of_stock") {
+    statusListings = listings.filter(
+      (listing) =>
+        listing.status === "out_of_stock" &&
+        !isListingExpired(listing)
+    );
   } else if (filter !== "all") {
     statusListings = listings.filter(
       (listing) => listing.status === filter
@@ -273,6 +257,20 @@ function getDaysRemaining(expiresAt: string) {
   return Math.ceil(
     (expiry - now) / (1000 * 60 * 60 * 24)
   );
+}
+
+function isListingExpired(listing: SellerListing) {
+  if (listing.status === "expired") return true;
+
+  if (
+    listing.status !== "active" &&
+    listing.status !== "out_of_stock"
+  ) {
+    return false;
+  }
+
+  const days = getDaysRemaining(listing.expiresAt);
+  return days !== null && days <= 0;
 }
 function getAnalytics(listingId: string) {
   return (
@@ -764,7 +762,9 @@ function getAnalytics(listingId: string) {
                   )}
 
                   <span className="dashboardStatus">
-  {listing.status === "draft"
+  {isListingExpired(listing)
+    ? "Expired"
+    : listing.status === "draft"
     ? "Inactive"
     : listing.status === "active"
       ? "Active"
