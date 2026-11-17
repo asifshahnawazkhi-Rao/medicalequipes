@@ -77,6 +77,28 @@ export function signInWithPassword(
   );
 }
 
+export async function refreshAuthSession(session: AuthSession) {
+  if (!session.refresh_token) {
+    throw new Error("Your login session has expired. Please log in again.");
+  }
+
+  const refreshed = await authRequest<AuthSession>(
+    "token?grant_type=refresh_token",
+    { refresh_token: session.refresh_token }
+  );
+
+  const nextSession: AuthSession = {
+    ...session,
+    ...refreshed,
+    user: refreshed.user ?? session.user,
+    refresh_token: refreshed.refresh_token ?? session.refresh_token,
+  };
+
+  Object.assign(session, nextSession);
+  saveSession(nextSession);
+  return nextSession;
+}
+
 export function signUpWithPassword(
   email: string,
   password: string,
