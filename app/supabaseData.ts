@@ -101,57 +101,6 @@ export async function getProfile(session: AuthSession) {
   };
 }
 
-export async function ensureSellerProfile(session: AuthSession) {
-  requireUserSession(session);
-
-  const existing = await getProfile(session);
-
-  if (existing?.role.toLowerCase() === "admin") return existing;
-
-  if (
-    existing &&
-    existing.role.toLowerCase() === "seller" &&
-    existing.status.toLowerCase() === "approved"
-  ) {
-    return existing;
-  }
-
-  if (existing) {
-    await updateProfile(session, {
-      fullName: existing.fullName,
-      phone: existing.phone,
-      businessName: existing.businessName,
-      city: existing.city,
-      visitingCardUrl: existing.visitingCardUrl,
-    });
-
-    return {
-      ...existing,
-      role: "seller",
-      status: "approved",
-    };
-  }
-
-  const authUser = await supabaseFetch<{
-    email?: string;
-    user_metadata?: Record<string, unknown>;
-  }>("/auth/v1/user", session);
-  const metadata = authUser.user_metadata ?? {};
-  const emailName = String(authUser.email ?? session.user?.email ?? "seller")
-    .split("@")[0]
-    .replace(/[._-]+/g, " ")
-    .trim();
-
-  await initializeSellerProfile(session, {
-    fullName: String(metadata.full_name ?? emailName ?? "Seller"),
-    phone: String(metadata.phone ?? ""),
-    businessName: String(metadata.business_name ?? metadata.full_name ?? emailName ?? ""),
-    city: String(metadata.city ?? ""),
-  });
-
-  return getProfile(session);
-}
-
 type OpenApiSchema = {
   definitions?: Record<string, { properties?: Record<string, unknown> }>;
   components?: { schemas?: Record<string, { properties?: Record<string, unknown> }> };
