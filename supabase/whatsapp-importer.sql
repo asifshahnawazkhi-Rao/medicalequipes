@@ -6,6 +6,8 @@ create table if not exists public.whatsapp_import_jobs (
   storage_path text not null,
   status text not null default 'uploaded' check (status in ('uploaded','extracting','analyzing','review','completed','failed')),
   error_message text not null default '',
+  extracted_text text not null default '',
+  media_manifest jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
