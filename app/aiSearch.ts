@@ -68,7 +68,10 @@ export function aiSearchScore(document: SearchDocument, query: string) {
     score += points;
     if (termScore(title, title.split(" "), term)) score += 8;
   }
-  const required = terms.length <= 2 ? terms.length : Math.ceil(terms.length * 0.6);
+  // Natural-language searches often contain generic words such as "machine",
+  // "item", or "available". A strong medical term should be enough to return
+  // the relevant equipment instead of requiring every word in the query.
+  const required = terms.length <= 2 ? 1 : Math.max(1, Math.ceil(terms.length * 0.5));
   return matches >= required ? score : 0;
 }
 export function rankByAiSearch<T>(items: T[], query: string, document: (item: T) => SearchDocument) {
