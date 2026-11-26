@@ -16,10 +16,25 @@ create table if not exists public.equipment_resources (
 
 create index if not exists equipment_resources_search_idx on public.equipment_resources using gin (to_tsvector('simple', coalesce(brand,'') || ' ' || coalesce(model,'') || ' ' || coalesce(title,'') || ' ' || coalesce(description,'')));
 alter table public.equipment_resources enable row level security;
+create or replace function public.is_medicalequipes_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+      and lower(role::text) = 'admin'
+  );
+$$;
+revoke all on function public.is_medicalequipes_admin() from public;
+grant execute on function public.is_medicalequipes_admin() to authenticated;
 drop policy if exists "Public can view equipment resources" on public.equipment_resources;
 create policy "Public can view equipment resources" on public.equipment_resources for select using (true);
 drop policy if exists "Admins manage equipment resources" on public.equipment_resources;
-create policy "Admins manage equipment resources" on public.equipment_resources for all to authenticated using (exists (select 1 from public.profiles p where p.id = auth.uid() and lower(p.role::text) = 'admin')) with check (exists (select 1 from public.profiles p where p.id = auth.uid() and lower(p.role::text) = 'admin'));
+create policy "Admins manage equipment resources" on public.equipment_resources for all to authenticated using (public.is_medicalequipes_admin()) with check (public.is_medicalequipes_admin());
 
 -- Resource files may use the existing public listing-images bucket.
 drop policy if exists "Admins upload resource files" on storage.objects;
