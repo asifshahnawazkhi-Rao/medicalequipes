@@ -18,6 +18,7 @@ import {
   type Requirement,
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
+import PWAInstallButton from "./components/PWAInstallButton";
 
 
 type Listing = [
@@ -359,6 +360,7 @@ const cityOptions = useMemo(() => {
     </button>
   </div>
 )}
+  <PWAInstallButton />
   <button className="primary" type="button" onClick={goToSell}>
     + Sell Equipment
   </button>

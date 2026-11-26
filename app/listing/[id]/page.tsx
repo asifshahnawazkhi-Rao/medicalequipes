@@ -9,6 +9,7 @@ import {
 } from "react";
 import { getStoredSession } from "../../auth";
 import AuthModal from "../../AuthModal";
+import PWAInstallButton from "../../components/PWAInstallButton";
 
 import {
   getListingById,
@@ -299,6 +300,9 @@ export default function ListingPage({
             <a href="/dashboard">Dashboard</a>
             <a href="/favorites">Favorites</a>
           </nav>
+          <div className="navActions">
+            <PWAInstallButton />
+          </div>
         </div>
       </header>
 

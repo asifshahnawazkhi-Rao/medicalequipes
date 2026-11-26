@@ -2511,3 +2511,81 @@
   .dashboardSectionHead { align-items: flex-start; flex-direction: column; }
 }
 
+/* PWA Install Button, iOS Guide Modal & Offline Indicator */
+.pwaInstallButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #087f8c;
+  border-radius: 9px;
+  background: #effafb;
+  color: #075e66;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.pwaInstallButton:hover {
+  background: #087f8c;
+  color: #fff;
+  transform: translateY(-1px);
+}
+.pwaInstallButton svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.pwaIosModal .eyebrow {
+  display: block;
+  margin-bottom: 6px;
+}
+.pwaIosSteps {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.7;
+  display: grid;
+  gap: 8px;
+}
+.offlineBanner {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #b45309;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .25);
+}
+.offlineDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fef3c7;
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .pwaInstallButton {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
+
