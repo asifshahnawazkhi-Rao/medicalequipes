@@ -19,6 +19,7 @@ import {
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
 import PWAInstallButton from "./components/PWAInstallButton";
+import { aiSearchScore, rankByAiSearch } from "./aiSearch";
 
 
 type Listing = [
@@ -34,29 +35,6 @@ type Listing = [
   number, // numericPrice
   string  // status
 ];
-
-function normalizeSearchText(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function searchTextMatches(searchableText: string, searchTerm: string) {
-  const normalizedText = normalizeSearchText(searchableText);
-  const normalizedTerm = normalizeSearchText(searchTerm);
-  if (!normalizedTerm) return true;
-
-  const compactText = normalizedText.replace(/\s+/g, "");
-  const compactTerm = normalizedTerm.replace(/\s+/g, "");
-
-  return normalizedText.includes(normalizedTerm) || compactText.includes(compactTerm);
-}
-
-
 
 export default function HomeContent() {
   const [authOpen, setAuthOpen] = useState(false);
@@ -75,6 +53,7 @@ export default function HomeContent() {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
+  const [searchedQuery, setSearchedQuery] = useState("");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
   const [publicRequirements, setPublicRequirements] = useState<Requirement[]>([]);
 useEffect(() => {
@@ -122,7 +101,7 @@ useEffect(() => {
     .then(setFavorites)
     .catch(() => setFavorites([]));
 }, [isLoggedIn]);
-  
+
   function contactSeller(id: string) {
     const session = getStoredSession();
 
@@ -203,41 +182,21 @@ const cityOptions = useMemo(() => {
   const min = minPrice ? Number(minPrice) : null;
   const max = maxPrice ? Number(maxPrice) : null;
 
-  return marketListings.filter(
-    ([
-      ,
-      title,
-      cat,
-      ,
-      listingCity,
-      condition,
-      ,
-      brand,
-      model,
-      numericPrice,
-    ]) =>
-      (
-        !q ||
-        searchTextMatches(
-          `${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`,
-          q
-        )
-      ) &&
+  return marketListings.map((listing) => ({
+    listing,
+    score: q ? aiSearchScore({
+      title: listing[1],
+      text: `${listing[2]} ${listing[4]} ${listing[5]} ${listing[7]} ${listing[8]}`,
+    }, q) : 1,
+  })).filter(
+    ({ listing: [, , cat, , listingCity, condition, , , , numericPrice], score }) =>
+      score > 0 &&
       (category === "All" || cat === category) &&
       (city === "All Pakistan" || listingCity === city) &&
-      (
-        conditionFilter === "All" ||
-        condition === conditionFilter
-      ) &&
-      (
-        min === null ||
-        numericPrice >= min
-      ) &&
-      (
-        max === null ||
-        numericPrice <= max
-      )
-  );
+      (conditionFilter === "All" || condition === conditionFilter) &&
+      (min === null || numericPrice >= min) &&
+      (max === null || numericPrice <= max)
+  ).sort((a, b) => b.score - a.score).map(({ listing }) => listing);
 }, [
   query,
   city,
@@ -263,15 +222,31 @@ const cityOptions = useMemo(() => {
   return items;
 }, [filtered, sortBy]);
 
+  const matchingRequirements = useMemo(() => rankByAiSearch(
+    publicRequirements, query, (item) => ({
+      title: item.requiredItem,
+      text: `${item.equipmentModel} ${item.acceptableCondition} ${item.details} ${item.posterName} ${item.posterCity} requirement wanted`,
+    })
+  ).map(({ item }) => item), [publicRequirements, query]);
+
+  const matchingSellers = useMemo(() => rankByAiSearch(
+    publicSellers, query, (item) => ({
+      title: item.businessName || item.fullName,
+      text: `${item.fullName} ${item.city} verified seller`,
+    })
+  ).map(({ item }) => item), [publicSellers, query]);
+
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent, selectedTerm?: string) {
     event?.preventDefault();
     const term = (selectedTerm ?? query).trim();
-    document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+    setSearchedQuery(term);
+    window.setTimeout(() => document.getElementById("ai-search-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 20);
     if (term.length >= 2) {
-      const resultCount = marketListings.filter(([, title, cat, , listingCity, condition, , brand, model]) =>
-        searchTextMatches(`${title} ${cat} ${listingCity} ${condition} ${brand} ${model}`, term)
-      ).length;
+      const resultCount = marketListings.filter((listing) => aiSearchScore({
+        title: listing[1],
+        text: `${listing[2]} ${listing[4]} ${listing[5]} ${listing[7]} ${listing[8]}`,
+      }, term) > 0).length;
       recordSearchEvent(term, resultCount, city, category).catch(() => undefined);
     }
   }
@@ -367,15 +342,15 @@ const cityOptions = useMemo(() => {
 </div></div></header>
 
       <section id="top" className="hero"><div className="container heroGrid"><div><div className="eyebrow">PAKISTAN&apos;S MEDICAL EQUIPMENT MARKETPLACE</div><h1>Buy & Sell<br /><strong>Medical Equipment</strong></h1><p>Find medical and surgical equipment from verified dealers, hospitals and professionals across Pakistan.</p>
-      <form className="searchBox googleSearchBox" onSubmit={search}>
+      <form className="searchBox googleSearchBox aiSearchBox" onSubmit={search}>
   <div className="searchInput googleSearchInput">
-    <span className="searchIcon">⌕</span>
+    <span className="searchIcon aiSearchIcon">✦</span>
 
     <input
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      placeholder="Search equipment, brand or model..."
-      aria-label="Search equipment"
+      placeholder="Ask AI: e.g. used ultrasound in Karachi..."
+      aria-label="AI search MedicalEquipes"
     />
   </div>
 
@@ -393,10 +368,11 @@ const cityOptions = useMemo(() => {
   </select>
 
   <button className="searchBtn" type="submit">
-    Search
+    AI Search
   </button>
-        
+
 </form>
+        <div className="aiSearchPrivacy">✦ Smart search · Results only from MedicalEquipes</div>
         <button
   type="button"
   className="filterToggle"
@@ -453,7 +429,19 @@ const cityOptions = useMemo(() => {
 )}
         <div className="popular"><b>Popular:</b> {['Ultrasound','ECG','Ventilator','OT Table','Analyzer'].map((term) => <button className={query === term ? "popularChip active" : "popularChip"} key={term} type="button" onClick={() => { setQuery(term); setTimeout(() => search(undefined, term), 20); }}>{term}</button>)}</div></div><div className="heroVisual"><div className="deviceCard mainDevice"><div className="monitorShell"><div className="deviceScreen monitorScreen"><div className="monitorTop"><span>ECG MONITOR</span><i>● LIVE</i></div><div className="monitorDisplay"><svg className="ecgWave" viewBox="0 0 560 120" role="img" aria-label="Live ECG waveform"><defs><pattern id="ecgGrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.7" /></pattern></defs><rect width="560" height="120" fill="url(#ecgGrid)" /><polyline points="0,69 45,69 58,64 68,70 80,69 94,25 108,104 122,50 136,69 186,69 200,64 210,70 223,69 237,25 251,104 265,50 279,69 329,69 343,64 353,70 366,69 380,25 394,104 408,50 422,69 472,69 486,64 496,70 509,69 523,25 537,104 551,50 560,69" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="monitorVitals"><div><span>HR</span><b>78</b><small>BPM</small></div><div><span>SpO₂</span><b>98</b><small>%</small></div><div><span>NIBP</span><b>120/80</b><small>mmHg</small></div></div></div><div className="monitorBrand"><span>MEDICAL</span><strong>EQUIPES</strong></div></div><div className="monitorControls"><span /><span /><span /><span /><b /></div></div><div className="deviceStand"><span /><b /></div></div><div className="floatCard"><span className="check">✓</span><div><b>Verified Sellers</b><small>Trusted marketplace members</small></div></div></div></div></section>
 
-      <section className="quick container"><button className="quickAction" onClick={() => search()}><span>⌕</span><div><b>Find Equipment</b><small>Search available listings</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><button className="quickAction" onClick={() => isLoggedIn ? window.location.assign('/requirement/new') : setAuthOpen(true)}><span>!</span><div><b>Post Requirement</b><small>Tell sellers what you need</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
+      {searchedQuery && (
+        <section id="ai-search-results" className="aiSearchSummary container" aria-live="polite">
+          <div><span>✦</span><div><small>AI SEARCH RESULTS FOR</small><strong>“{searchedQuery}”</strong></div></div>
+          <nav>
+            <a href="#listings"><b>{filtered.length}</b> Listings</a>
+            <a href="#requirements"><b>{matchingRequirements.length}</b> Requirements</a>
+            <a href="#sellers"><b>{matchingSellers.length}</b> Sellers</a>
+          </nav>
+          <button type="button" onClick={() => { setQuery(""); setSearchedQuery(""); }}>Clear</button>
+        </section>
+      )}
+
+      <section className="quick container"><button className="quickAction" onClick={() => search()}><span>✦</span><div><b>AI Equipment Search</b><small>Search all website data</small></div></button><button className="quickAction" onClick={goToSell}><span>＋</span><div><b>Sell Equipment</b><small>Reach verified buyers</small></div></button><button className="quickAction" onClick={() => isLoggedIn ? window.location.assign('/requirement/new') : setAuthOpen(true)}><span>!</span><div><b>Post Requirement</b><small>Tell sellers what you need</small></div></button><a href="#sellers"><span>✓</span><div><b>Verified Sellers</b><small>Buy with confidence</small></div></a></section>
 
       <section id="listings" className="section mutedSection"><div className="container"><div className="sectionHead"><div><span className="eyebrow">MARKETPLACE</span><h2>Featured Equipment</h2><p>{filtered.length} listing{filtered.length === 1 ? "" : "s"} found</p></div><button
   type="button"
@@ -546,9 +534,9 @@ const cityOptions = useMemo(() => {
           + Post Requirement
         </button>
       </div>
-      {publicRequirements.length > 0 ? (
+      {(query.trim() ? matchingRequirements : publicRequirements).length > 0 ? (
         <div className="requirementGrid">
-          {publicRequirements.map((requirement) => (
+          {(query.trim() ? matchingRequirements : publicRequirements).map((requirement) => (
             <article className="requirementCard" key={requirement.id}>
               <div className="requirementCardTop"><span>WANTED</span><time>{new Date(requirement.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}</time></div>
               <h3>{requirement.requiredItem}</h3>
@@ -586,9 +574,9 @@ const cityOptions = useMemo(() => {
     </button>
   </div>
 
-  {publicSellers.length > 0 ? (
+  {(query.trim() ? matchingSellers : publicSellers).length > 0 ? (
     <div className="sellerGrid">
-      {publicSellers.map((seller) => {
+      {(query.trim() ? matchingSellers : publicSellers).map((seller) => {
         const sellerName =
           seller.businessName ||
           seller.fullName ||
