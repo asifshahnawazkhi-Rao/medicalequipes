@@ -17,6 +17,26 @@ export type SocialPost = {
   publishedAt: string;
 };
 
+export type EquipmentResource = {
+  id: string; brand: string; model: string; title: string; resourceType: string;
+  description: string; fileUrl: string; externalUrl: string; mimeType: string; createdAt: string;
+};
+
+function mapEquipmentResource(row: Record<string, unknown>): EquipmentResource {
+  return { id: String(row.id ?? ""), brand: String(row.brand ?? ""), model: String(row.model ?? ""), title: String(row.title ?? ""), resourceType: String(row.resource_type ?? "other"), description: String(row.description ?? ""), fileUrl: String(row.file_url ?? ""), externalUrl: String(row.external_url ?? ""), mimeType: String(row.mime_type ?? ""), createdAt: String(row.created_at ?? "") };
+}
+
+export async function getPublicEquipmentResources(): Promise<EquipmentResource[]> {
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/equipment_resources?select=*&order=created_at.desc&limit=500");
+  return rows.map(mapEquipmentResource);
+}
+
+export async function getAdminEquipmentResources(session: AuthSession) {
+  requireUserSession(session);
+  const rows = await supabaseFetch<Array<Record<string, unknown>>>("/rest/v1/equipment_resources?select=*&order=created_at.desc&limit=500", session);
+  return rows.map(mapEquipmentResource);
+}
+
 function mapSocialPost(row: Record<string, unknown>): SocialPost {
   return {
     id: String(row.id ?? ""), postType: String(row.post_type ?? "general"), title: String(row.title ?? ""),
