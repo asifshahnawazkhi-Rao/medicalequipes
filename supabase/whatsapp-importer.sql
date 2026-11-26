@@ -15,6 +15,14 @@ alter table public.whatsapp_import_jobs enable row level security;
 create or replace function public.is_medicalequipes_admin() returns boolean language sql security definer set search_path=public stable as $$ select exists(select 1 from public.profiles where id=auth.uid() and lower(role::text)='admin'); $$;
 drop policy if exists "Admins manage WhatsApp imports" on public.whatsapp_import_jobs;
 create policy "Admins manage WhatsApp imports" on public.whatsapp_import_jobs for all to authenticated using (public.is_medicalequipes_admin()) with check (public.is_medicalequipes_admin());
+create table if not exists public.whatsapp_import_items (
+  id uuid primary key default gen_random_uuid(),
+  import_job_id uuid not null references public.whatsapp_import_jobs(id) on delete cascade,
+  source_text text not null default '', seller_name text not null default '', seller_phone text not null default '', brand text not null default '', model text not null default '', title text not null default '', condition text not null default '', price numeric, quantity integer, media_files jsonb not null default '[]'::jsonb, status text not null default 'pending' check (status in ('pending','approved','rejected','posted')), created_at timestamptz not null default now()
+);
+alter table public.whatsapp_import_items enable row level security;
+drop policy if exists "Admins manage WhatsApp import items" on public.whatsapp_import_items;
+create policy "Admins manage WhatsApp import items" on public.whatsapp_import_items for all to authenticated using (public.is_medicalequipes_admin()) with check (public.is_medicalequipes_admin());
 insert into storage.buckets (id,name,public) values ('whatsapp-imports','whatsapp-imports',false) on conflict (id) do nothing;
 drop policy if exists "Admins upload WhatsApp ZIPs" on storage.objects;
 create policy "Admins upload WhatsApp ZIPs" on storage.objects for all to authenticated using (bucket_id='whatsapp-imports' and public.is_medicalequipes_admin()) with check (bucket_id='whatsapp-imports' and public.is_medicalequipes_admin());
