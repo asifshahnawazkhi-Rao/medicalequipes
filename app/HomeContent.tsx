@@ -11,11 +11,13 @@ import {
   getPublicListings,
   getPublicSellers,
   getPublicRequirements,
+  getPublicEquipmentResources,
   recordSearchEvent,
   removeFavorite,
   type PublicSeller,
   type CategoryOption,
   type Requirement,
+  type EquipmentResource,
 } from "./supabaseData";
 import AuthModal from "./AuthModal";
 import PWAInstallButton from "./components/PWAInstallButton";
@@ -56,6 +58,7 @@ export default function HomeContent() {
   const [searchedQuery, setSearchedQuery] = useState("");
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
   const [publicRequirements, setPublicRequirements] = useState<Requirement[]>([]);
+  const [publicResources, setPublicResources] = useState<EquipmentResource[]>([]);
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -152,6 +155,9 @@ useEffect(() => {
         setPublicRequirements([]);
       });
   }, []);
+  useEffect(() => {
+    getPublicEquipmentResources().then(setPublicResources).catch(() => setPublicResources([]));
+  }, []);
 const cityOptions = useMemo(() => {
   const uniqueCities = Array.from(
     new Set(
@@ -235,6 +241,15 @@ const cityOptions = useMemo(() => {
       text: `${item.fullName} ${item.city} verified seller`,
     })
   ).map(({ item }) => item), [publicSellers, query]);
+
+  const matchingResources = useMemo(() => rankByAiSearch(
+    publicResources,
+    query,
+    (item) => ({
+      title: item.title,
+      text: `${item.brand} ${item.model} ${item.resourceType} ${item.description} catalog brochure manual driver software`,
+    })
+  ).map(({ item }) => item), [publicResources, query]);
 
   function goToSell() { window.location.assign("/sell"); }
   function search(event?: FormEvent, selectedTerm?: string) {
@@ -436,6 +451,7 @@ const cityOptions = useMemo(() => {
             <a href="#listings"><b>{filtered.length}</b> Listings</a>
             <a href="#requirements"><b>{matchingRequirements.length}</b> Requirements</a>
             <a href="#sellers"><b>{matchingSellers.length}</b> Sellers</a>
+            <a href="#resources"><b>{matchingResources.length}</b> Resources</a>
           </nav>
           <button type="button" onClick={() => { setQuery(""); setSearchedQuery(""); }}>Clear</button>
         </section>
@@ -552,6 +568,15 @@ const cityOptions = useMemo(() => {
       )}
     </div>
    </section>
+
+   {(query.trim() ? matchingResources : []).length > 0 && (
+     <section id="resources" className="section container">
+       <div className="sectionHead"><div><span className="eyebrow">DOCUMENTS &amp; DOWNLOADS</span><h2>Helpful Resources</h2><p>Manuals, catalogs, drivers and software found on MedicalEquipes.</p></div></div>
+       <div className="sellerGrid">
+         {matchingResources.map((resource) => <article className="seller" key={resource.id}><div className="avatar">↓</div><div><h3>{resource.title}</h3><p>{resource.brand} {resource.model}</p><small>{resource.resourceType.replaceAll("_", " ")}</small></div><a className="primary" href={resource.fileUrl || resource.externalUrl} target="_blank" rel="noreferrer">Open / Download</a></article>)}
+       </div>
+     </section>
+   )}
 
    <section id="sellers" className="section container">
   <div className="sectionHead">
