@@ -59,6 +59,13 @@ export default function HomeContent() {
   const [publicSellers, setPublicSellers] = useState<PublicSeller[]>([]);
   const [publicRequirements, setPublicRequirements] = useState<Requirement[]>([]);
   const [publicResources, setPublicResources] = useState<EquipmentResource[]>([]);
+  async function sharePublicResource(resource: EquipmentResource) {
+    const link = resource.fileUrl || resource.externalUrl;
+    try {
+      if (navigator.share) await navigator.share({ title: resource.title, text: `${resource.brand} ${resource.model} — ${resource.title}`, url: link });
+      else { await navigator.clipboard.writeText(link); window.alert("Resource link copied."); }
+    } catch (error) { if (!(error instanceof Error && error.name === "AbortError")) window.alert("Could not share this resource."); }
+  }
 useEffect(() => {
   function checkSession() {
     const session = getStoredSession();
@@ -573,7 +580,7 @@ const cityOptions = useMemo(() => {
      <section id="resources" className="section container">
        <div className="sectionHead"><div><span className="eyebrow">DOCUMENTS &amp; DOWNLOADS</span><h2>Helpful Resources</h2><p>Manuals, catalogs, drivers and software found on MedicalEquipes.</p></div></div>
        <div className="sellerGrid">
-         {matchingResources.map((resource) => <article className="seller" key={resource.id}><div className="avatar">↓</div><div><h3>{resource.title}</h3><p>{resource.brand} {resource.model}</p><small>{resource.resourceType.replaceAll("_", " ")}</small></div><a className="primary" href={resource.fileUrl || resource.externalUrl} target="_blank" rel="noreferrer">Open / Download</a></article>)}
+         {matchingResources.map((resource) => <article className="seller" key={resource.id}><div className="avatar">↓</div><div><h3>{resource.title}</h3><p>{resource.brand} {resource.model}</p><small>{resource.resourceType.replaceAll("_", " ")}</small></div><div className="sellerActions"><a className="primary" href={resource.fileUrl || resource.externalUrl} target="_blank" rel="noreferrer">Open / Download</a><button type="button" onClick={() => sharePublicResource(resource)}>Share</button></div></article>)}
        </div>
      </section>
    )}
